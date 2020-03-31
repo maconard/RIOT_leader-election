@@ -64,6 +64,10 @@ My Scripts
 
 2. `install_topology.sh` - a simple script that moves the output file from the topology generator to the desvirt working directory.
 
+### Command Line Arguments
+
+$1: the topology.xml file to install for desvirt
+
 Sample Use
 ==========
 
