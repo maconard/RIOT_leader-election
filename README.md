@@ -72,6 +72,8 @@ Sample Use
 ==========
 
 ```
+> cd /path/to/RIOT/examples/my_project
+
 > python mac_topology_gen.py --s 5 --t ring --d uni --l 20.0 --e /my/project/binary.elf
 Created uni-ring5.xml
 Created uni-ring5_cleanup.sh
