@@ -33,7 +33,7 @@ RIOT Shell
 The shell commands come with online help. Call `help` to see which commands
 exist and what they do.
 
-RIOT specific
+RIOT Specific
 =============
 
 The `ps` command is used to see and analyze all the threads' states and memory
@@ -55,4 +55,4 @@ information about any received packet over the serial. This will look like.
 My Protocols
 ==========
 
-To initiate leader election, run the `elect_leader start` command in the RIOT shell.
+To initiate leader election, run the `elect_leader start` command in the RIOT shell. Note that this is not implemented yet; it just starts a custom UDP server and waits.
