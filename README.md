@@ -53,7 +53,7 @@ My Scripts
 --c, default=2, type=int, Number of cols in the grid (only used with --t grid)  
 --s, default=4, type=int, Number of nodes in the network (not used with --t grid)  
 --t, default="ring", type=str, choices=['ring', 'line', 'binary-tree', 'grid'], The topology to create for this network  
---d, default="bi", type=str, choices=['uni','bi'], Uni or bidirectional links (not used with --t grid  
+--d, default="bi", type=str, choices=['uni','bi'], Uni or bidirectional links (not used with --t grid)  
 --b, default="0.0", type=str, Percentage of broadcast loss given as a string (default "0.0")  
 --l, default="0.0", type=str, Percentage of packet loss given as a string (default "0.0")  
 --e, default="", type=str, Address of a compiled RIOT project .elf file to run on all the nodes  
