@@ -74,7 +74,11 @@ Sample Use
 ```
 > cd /path/to/RIOT/examples/my_project
 
-> python mac_topology_gen.py --s 5 --t ring --d uni --l 20.0 --e /my/project/binary.elf
+> make
+...output from make
+Created /path/to/my/project/binary.elf
+
+> python mac_topology_gen.py --s 5 --t ring --d uni --l 20.0 --e /path/to/my/project/binary.elf
 Created uni-ring5.xml
 Created uni-ring5_cleanup.sh
 
@@ -107,7 +111,7 @@ vnet           : Loaded statefile .desvirt/lib/uni-ring5.pids.
 vnet           : Network Name: uni-ring5
 vnet           : Shutting down bridge and links...
 vnet           : Shutting down nodes...
-riotnative     : Kill the RIOT: /my/project/binary.elf (5996)
+riotnative     : Kill the RIOT: /path/to/my/project/binary.elf (5996)
 
 > TOPO=uni-ring5 make desvirt-undefine
 cd /path/to/RIOT/dist/tools/desvirt/desvirt && ./vnet -u /path/to/RIOT/dist/tools/desvirt/desvirt/.desvirt/ -n uni-ring5
