@@ -46,7 +46,7 @@ To initiate leader election, run the `elect_leader start` command in the RIOT sh
 
 My Scripts
 ==========
-`mac_topology_gen.py` - my python script that can generate line, ring, tree, and grid topologies while specifying size, broadcast packet loss, incoming packet loss, and RIOT executable files
+1. `mac_topology_gen.py` - my python script that can generate line, ring, tree, and grid topologies while specifying size, broadcast packet loss, incoming packet loss, and RIOT executable files
 
 ### Command Line Arguments
 --r, default=2, type=int, choices=range(1,27), Number of rows in the grid from 1 to 26 (only used with --t grid)  
@@ -62,4 +62,49 @@ My Scripts
 - A topology .XML file intended to be consumed by RIOT's desvirt/vnet tools.  
 - A cleanup .sh script that will delete all the taps/tuns that desvirt/vnet will create for the network.
 
-`install_topology.sh` - a simple script that moves the output file from the topology generator to the desvirt working directory.
+2. `install_topology.sh` - a simple script that moves the output file from the topology generator to the desvirt working directory.
+
+Sample Use
+==========
+
+```
+> python mac_topology_gen.py --s 5 --t ring --d uni --l 20.0 --e /my/project/binary.elf
+Created uni-ring5.xml
+Created uni-ring5_cleanup.sh
+> ./install_topology.sh uni-ring5.xml
+uni-ring5.xml has been installed for desvirt to use
+> TOPO=uni-ring5 make desvirt-define
+cd /home/michael/Documents/Software/RIOT/dist/tools/desvirt/desvirt && ./vnet -d /home/michael/Documents/Software/RIOT/dist/tools/desvirt/desvirt/.desvirt/ -n uni-ring5
+vnet           : Loaded statefile .desvirt/lib/uni-ring5.macs.
+vnet           : Network Name: uni-ring5
+vnet           : Setting up virtual topology uni-ring5...
+> TOPO=uni-ring5 make desvirt-start
+cd /path/to/RIOT/dist/tools/desvirt/desvirt && ./vnet -s -n uni-ring5
+...output from creating node taps
+...output from defining node links/neighbors
+...output from initiating RIOT processes
+```
+> make desvirt-list
+cd /path/to/RIOT/dist/tools/desvirt/desvirt && ./vnet -l
+Network Name         State
+----------------------------
+uni-ring5            running
+> TOPO=uni-ring5 make desvirt-stop
+cd /path/to/RIOT/dist/tools/desvirt/desvirt && ./vnet -q -n uni-ring5
+vnet           : Loaded statefile .desvirt/lib/uni-ring5.macs.
+vnet           : Loaded statefile .desvirt/lib/uni-ring5.taps.
+vnet           : Loaded statefile .desvirt/lib/uni-ring5.pids.
+vnet           : Network Name: uni-ring5
+vnet           : Shutting down bridge and links...
+vnet           : Shutting down nodes...
+riotnative     : Kill the RIOT: /my/project/binary.elf (5996)
+> TOPO=uni-ring5 make desvirt-undefine
+cd /path/to/RIOT/dist/tools/desvirt/desvirt && ./vnet -u /path/to/RIOT/dist/tools/desvirt/desvirt/.desvirt/ -n uni-ring5
+vnet           : Loaded statefile .desvirt/lib/uni-ring5.macs.
+vnet           : Loaded statefile .desvirt/lib/uni-ring5.taps.
+vnet           : Loaded statefile .desvirt/lib/uni-ring5.pids.
+vnet           : Network Name: uni-ring5
+vnet           : Undefining network...
+vnet           : Done.
+> ./uni-ring5_cleanup.sh
+
