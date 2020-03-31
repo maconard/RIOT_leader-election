@@ -1,4 +1,6 @@
-// Taken from: https://github.com/RIOT-OS/Tutorials/tree/master/task-06
+// Originally taken from: https://github.com/RIOT-OS/Tutorials/tree/master/task-06
+// @author Michael Conard
+// Purpose: A tutorial UDP file that I have modified to fit my leader election needs.
 
 #include <stdbool.h>
 #include <stdint.h>
