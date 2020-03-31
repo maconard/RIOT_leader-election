@@ -2,4 +2,5 @@ bin
 bin/
 bin/*
 .git
+*_cleanup.sh
 
