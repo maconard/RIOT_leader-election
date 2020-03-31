@@ -75,24 +75,28 @@ Sample Use
 > python mac_topology_gen.py --s 5 --t ring --d uni --l 20.0 --e /my/project/binary.elf
 Created uni-ring5.xml
 Created uni-ring5_cleanup.sh
+
 > ./install_topology.sh uni-ring5.xml
 uni-ring5.xml has been installed for desvirt to use
+
 > TOPO=uni-ring5 make desvirt-define
 cd /home/michael/Documents/Software/RIOT/dist/tools/desvirt/desvirt && ./vnet -d /home/michael/Documents/Software/RIOT/dist/tools/desvirt/desvirt/.desvirt/ -n uni-ring5
 vnet           : Loaded statefile .desvirt/lib/uni-ring5.macs.
 vnet           : Network Name: uni-ring5
 vnet           : Setting up virtual topology uni-ring5...
+
 > TOPO=uni-ring5 make desvirt-start
 cd /path/to/RIOT/dist/tools/desvirt/desvirt && ./vnet -s -n uni-ring5
 ...output from creating node taps
 ...output from defining node links/neighbors
 ...output from initiating RIOT processes
-```
+
 > make desvirt-list
 cd /path/to/RIOT/dist/tools/desvirt/desvirt && ./vnet -l
 Network Name         State
 ----------------------------
 uni-ring5            running
+
 > TOPO=uni-ring5 make desvirt-stop
 cd /path/to/RIOT/dist/tools/desvirt/desvirt && ./vnet -q -n uni-ring5
 vnet           : Loaded statefile .desvirt/lib/uni-ring5.macs.
@@ -102,6 +106,7 @@ vnet           : Network Name: uni-ring5
 vnet           : Shutting down bridge and links...
 vnet           : Shutting down nodes...
 riotnative     : Kill the RIOT: /my/project/binary.elf (5996)
+
 > TOPO=uni-ring5 make desvirt-undefine
 cd /path/to/RIOT/dist/tools/desvirt/desvirt && ./vnet -u /path/to/RIOT/dist/tools/desvirt/desvirt/.desvirt/ -n uni-ring5
 vnet           : Loaded statefile .desvirt/lib/uni-ring5.macs.
@@ -110,5 +115,7 @@ vnet           : Loaded statefile .desvirt/lib/uni-ring5.pids.
 vnet           : Network Name: uni-ring5
 vnet           : Undefining network...
 vnet           : Done.
+
 > ./uni-ring5_cleanup.sh
+```
 
