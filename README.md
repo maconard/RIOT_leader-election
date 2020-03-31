@@ -61,7 +61,7 @@ My Scripts
 ==========
 `mac_topology_gen.py` - my python script that can generate line, ring, tree, and grid topologies while specifying size, broadcast packet loss, incoming packet loss, and RIOT executable files
 
-# Command Line Arguments
+### Command Line Arguments
 --r, default=2, type=int, choices=range(1,27), Number of rows in the grid from 1 to 26 (only used with --t grid)
 --c, default=2, type=int, Number of cols in the grid (only used with --t grid)
 --s, default=4, type=int, Number of nodes in the network (not used with --t grid)
@@ -71,7 +71,7 @@ My Scripts
 --l, default="0.0", type=str, Percentage of packet loss given as a string (default "0.0")
 --e, default="", type=str, Address of a compiled RIOT project .elf file to run on all the nodes
 
-# Output
+### Output
 - A topology .XML file intended to be consumed by RIOT's desvirt/vnet tools.
 - A cleanup .sh script that will delete all the taps/tuns that desvirt/vnet will create for the network.
 
