@@ -46,7 +46,8 @@ To initiate leader election, run the `elect_leader start` command in the RIOT sh
 
 My Scripts
 ==========
-1. `mac_topology_gen.py` - my python script that can generate line, ring, tree, and grid topologies while specifying size, broadcast packet loss, incoming packet loss, and RIOT executable files
+## `mac_topology_gen.py`
+My python script that can generate line, ring, tree, and grid topologies while specifying size, broadcast packet loss, incoming packet loss, and RIOT executable files
 
 ### Command Line Arguments
 --r, default=2, type=int, choices=range(1,27), Number of rows in the grid from 1 to 26 (only used with --t grid)  
@@ -79,13 +80,15 @@ grid - An `r x c` matrix of nodes where every node can bidirectionally communica
 - A topology .XML file intended to be consumed by RIOT's desvirt/vnet tools.  
 - A cleanup .sh script that will delete all the taps/tuns that desvirt/vnet will create for the network.
 
-2. `install_topology` - a simple script that moves the output file from the topology generator to the desvirt working directory.
+## `install_topology` 
+A simple script that moves the output file from the topology generator to the desvirt working directory.
 
 ### Command Line Arguments
 
 $1: the topology.xml file to install for desvirt
 
-3. `riot` - a simple script that makes it easier to use desvirt
+## `riot` 
+A simple script that makes it easier to use desvirt
 
 ### Command Line Arguments
 
