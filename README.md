@@ -93,7 +93,7 @@ A simple script that makes it easier to use desvirt
 ### Command Line Arguments
 
 $1: the desvirt command to run, from: `list`, `define`, `undefine`, `start`, `stop`  
-$2: the topology file to launch (not used with `$1=list`)
+$2: the topology file to launch (not used with `list`)
 
 Sample Use
 ==========

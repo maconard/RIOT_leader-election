@@ -1,17 +1,27 @@
-// Originally taken from: https://github.com/RIOT-OS/Tutorials/tree/master/task-06
-// @author Michael Conard
-// Purpose: A tutorial UDP file that I have modified to fit my leader election needs.
+/*
+ * Original sample file taken from: https://github.com/RIOT-OS/Tutorials/tree/master/task-06
+ *
+ * All changes and final product:
+ * @author  Michael Conard <maconard@mtu.edu>
+ *
+ * Purpose: A UDP server designed to work with my leader election protocol.
+ */
 
+// Standard C includes
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include <msg.h>
 
-#include "net/sock/udp.h"
-#include "net/ipv6/addr.h"
+// Standard RIOT includes
 #include "thread.h"
 #include "xtimer.h"
+
+// Networking includes
+#include "net/sock/udp.h"
+#include "net/ipv6/addr.h"
+
 
 #define SERVER_MSG_QUEUE_SIZE   (8)
 #define SERVER_BUFFER_SIZE      (64)
@@ -31,10 +41,11 @@ bool runningLE = false;
 
 void *_udp_server(void *args)
 {
-    printf("UDP: Entered UDP server code\n");
+    //printf("UDP: Entered UDP server code\n");
     sock_udp_ep_t server = { .port = SERVER_PORT, .family = AF_INET6 };
     msg_init_queue(server_msg_queue, SERVER_MSG_QUEUE_SIZE);
-    kernel_pid_t leaderPID = (kernel_pid_t)(*(int*)args);
+    kernel_pid_t leaderPID = (kernel_pid_t)atoi(args);
+    int failCount = 0;
 
     if(sock_udp_create(&sock, &server, NULL, 0) < 0) {
         return NULL;
@@ -47,28 +58,28 @@ void *_udp_server(void *args)
     msg_out.type = 0;
     msg_out.content.ptr = (void*)"init";
 
-    bool ipcMsgReceived = false;
-    int failCount = 0;
+    printf("UDP: Trying to communicate with process PID=%" PRIkernel_pid  "\n", leaderPID);
     while (1) {
         if (failCount == 10) {
-            printf("UDP: Error - timed out on communicating with protocol thread\n");
+            (void) puts("UDP: Error - timed out on communicating with protocol thread");
             return NULL;
         }
 
         // wait for protocol thread to initialize    
-        int res = msg_send(&msg_out, leaderPID);
+        int res = msg_try_send(&msg_out, leaderPID);
         if (res == -1) {
             // msg failed because protocol thread doesn't exist or we have the wrong PID
-            printf("UDP: Error - UDP server thread can't communicate with protocol thread\n");
+            (void) puts("UDP: Error - UDP server thread can't communicate with protocol thread");
             failCount++;
         } else if (res == 0) {
             // msg failed because protocol thread isn't ready to receive yet
             failCount++;
         } else if (res == 1) {
             // msg succeeded
-            printf("UDP: thread successfully initiated communication with the protocol thread\n");
+            printf("UDP: thread successfully initiated communication with the PID=%" PRIkernel_pid  "\n", leaderPID);
             break;
         }
+
         xtimer_sleep(1); // wait 1 second
     }
 
@@ -82,7 +93,7 @@ void *_udp_server(void *args)
                 printf("UDP: Error - failed to receive UDP, %d\n", res);
         }
         else if (res == 0) {
-            puts("UDP: no UDP data received");
+            (void) puts("UDP: no UDP data received");
         }
         else {
             server_buffer[res] = '\0';
@@ -90,22 +101,20 @@ void *_udp_server(void *args)
         }
 
         // incoming thread message
-        memset(msg_content, 0, MAX_IPC_MESSAGE_SIZE * (sizeof msg_content[0]));
-        ipcMsgReceived = false;
-        msg_try_receive(&msg_in);
-        if (msg_in.type > 0 && msg_in.type < MAX_IPC_MESSAGE_SIZE) {
-            // process string message of size msg_in.type
-            strncpy(msg_content, (char*)msg_in.content.ptr, (uint16_t)msg_in.type);
-            ipcMsgReceived = true;
-            printf("UDP: received IPC message: %s from %" PRIkernel_pid "\n", msg_content, msg_in.sender_pid);
-        } else {
-            (void) puts("UPD: received an illegal or too large IPC message");
+        res = msg_try_receive(&msg_in);
+        if (res == 1) {
+            if (msg_in.type > 0 && msg_in.type < MAX_IPC_MESSAGE_SIZE) {
+                // process string message of size msg_in.type
+                strncpy(msg_content, (char*)msg_in.content.ptr, (uint16_t)msg_in.type);
+                printf("UDP: received IPC message: %s from %" PRIkernel_pid "\n", msg_content, msg_in.sender_pid);
+            } else {
+                printf("UPD: received an illegal or too large IPC message, type=%u", msg_in.type);
+            }
+
+            memset(msg_content, 0, MAX_IPC_MESSAGE_SIZE * (sizeof msg_content[0]));
         }
 
-        // react to IPC message
-        if (ipcMsgReceived) {
-            
-        }
+        xtimer_sleep(1); // wait 1 second
     }
 
     return NULL;
@@ -117,12 +126,12 @@ int udp_send(int argc, char **argv)
     sock_udp_ep_t remote = { .family = AF_INET6 };
 
     if (argc != 4) {
-        puts("Usage: udp <ipv6-addr> <port> <payload>");
+        (void) puts("UDP: Usage - udp <ipv6-addr> <port> <payload>");
         return -1;
     }
 
     if (ipv6_addr_from_str((ipv6_addr_t *)&remote.addr, argv[1]) == NULL) {
-        puts("Error: unable to parse destination address");
+        (void) puts("UDP: Error - unable to parse destination address");
         return 1;
     }
     if (ipv6_addr_is_link_local((ipv6_addr_t *)&remote.addr)) {
@@ -132,21 +141,22 @@ int udp_send(int argc, char **argv)
     }
     remote.port = atoi(argv[2]);
     if((res = sock_udp_send(NULL, argv[3], strlen(argv[3]), &remote)) < 0) {
-        puts("could not send");
+        printf("UDP: Error - could not send message \"%s\" to %s\n", argv[3], argv[1]);
     }
     else {
-        printf("Success: send %u byte to %s\n", (unsigned) res, argv[1]);
+        printf("UDP: Success - sent %u byte to %s\n", (unsigned) res, argv[1]);
     }
     return 0;
 }
 
 int udp_send_multi(int argc, char **argv)
 {
+    //multicast: FF02::1
     int res;
     sock_udp_ep_t remote = { .family = AF_INET6 };
 
     if (argc != 3) {
-        puts("Usage: udp <port> <payload>");
+        (void) puts("UDP: Usage - udp <port> <payload>");
         return -1;
     }
 
@@ -159,10 +169,10 @@ int udp_send_multi(int argc, char **argv)
     }
     remote.port = atoi(argv[1]);
     if((res = sock_udp_send(NULL, argv[2], strlen(argv[2]), &remote)) < 0) {
-        puts("could not send");
+        printf("UDP: Error - could not send message \"%s\" to FF01::1\n", argv[2]);
     }
     else {
-        printf("Success: send %u byte to %s\n", (unsigned) res, "ff02::1");
+        printf("UDP: Success - sent %u byte to FF02::1\n", (unsigned)res);
     }
     return 0;
 }
@@ -170,7 +180,7 @@ int udp_send_multi(int argc, char **argv)
 int udp_server(int argc, char **argv)
 {
     if (argc != 2) {
-        puts("Usage: udps <thread_pid>");
+        puts("MAIN: Usage - udps <thread_pid>");
         return -1;
     }
 
