@@ -79,11 +79,18 @@ grid - An `r x c` matrix of nodes where every node can bidirectionally communica
 - A topology .XML file intended to be consumed by RIOT's desvirt/vnet tools.  
 - A cleanup .sh script that will delete all the taps/tuns that desvirt/vnet will create for the network.
 
-2. `install_topology.sh` - a simple script that moves the output file from the topology generator to the desvirt working directory.
+2. `install_topology` - a simple script that moves the output file from the topology generator to the desvirt working directory.
 
 ### Command Line Arguments
 
 $1: the topology.xml file to install for desvirt
+
+3. `riot` - a simple script that makes it easier to use desvirt
+
+### Command Line Arguments
+
+$1: the desvirt command to run, from: `list`, `define`, `undefine`, `start`, `stop`  
+$2: the topology file to launch (not used with `$1=list`)
 
 Sample Use
 ==========
@@ -99,28 +106,28 @@ Created /path/to/my/project/binary.elf
 Created uni-ring5.xml
 Created uni-ring5_cleanup.sh
 
-> ./install_topology.sh uni-ring5.xml
+> ./install_topology uni-ring5.xml
 uni-ring5.xml has been installed for desvirt to use
 
-> TOPO=uni-ring5 make desvirt-define
+> ./riot define uni-ring5
 cd /home/michael/Documents/Software/RIOT/dist/tools/desvirt/desvirt && ./vnet -d /home/michael/Documents/Software/RIOT/dist/tools/desvirt/desvirt/.desvirt/ -n uni-ring5
 vnet           : Loaded statefile .desvirt/lib/uni-ring5.macs.
 vnet           : Network Name: uni-ring5
 vnet           : Setting up virtual topology uni-ring5...
 
-> TOPO=uni-ring5 make desvirt-start
+> ./riot start uni-ring5
 cd /path/to/RIOT/dist/tools/desvirt/desvirt && ./vnet -s -n uni-ring5
 ...output from creating node taps
 ...output from defining node links/neighbors
 ...output from initiating RIOT processes
 
-> make desvirt-list
+> riot list
 cd /path/to/RIOT/dist/tools/desvirt/desvirt && ./vnet -l
 Network Name         State
 ----------------------------
 uni-ring5            running
 
-> TOPO=uni-ring5 make desvirt-stop
+> riot stop uni-ring5
 cd /path/to/RIOT/dist/tools/desvirt/desvirt && ./vnet -q -n uni-ring5
 vnet           : Loaded statefile .desvirt/lib/uni-ring5.macs.
 vnet           : Loaded statefile .desvirt/lib/uni-ring5.taps.
@@ -130,7 +137,7 @@ vnet           : Shutting down bridge and links...
 vnet           : Shutting down nodes...
 riotnative     : Kill the RIOT: /path/to/my/project/binary.elf (5996)
 
-> TOPO=uni-ring5 make desvirt-undefine
+> riot undefine uni-ring5
 cd /path/to/RIOT/dist/tools/desvirt/desvirt && ./vnet -u /path/to/RIOT/dist/tools/desvirt/desvirt/.desvirt/ -n uni-ring5
 vnet           : Loaded statefile .desvirt/lib/uni-ring5.macs.
 vnet           : Loaded statefile .desvirt/lib/uni-ring5.taps.

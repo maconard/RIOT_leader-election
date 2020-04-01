@@ -231,7 +231,7 @@ elif topo == "binary-tree":
                 break
         if count >= size:
             break
-f.write("vnet -u -n %s\n" % name)
+f.write("make desvirt-undefine TOPO=%s\n" % name)
 
 f.close()
 st = os.stat(cName)
