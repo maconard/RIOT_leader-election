@@ -12,8 +12,8 @@ parser = argparse.ArgumentParser(description='Parsing for Michael\'s grid genera
 parser.add_argument("--r", default=2, type=int, choices=range(1,27), help="Number of rows in the grid from 1 to 26 (only used with --t grid)")
 parser.add_argument("--c", default=2, type=int, help="Number of cols in the grid (only used with --t grid)")
 parser.add_argument("--s", default=4, type=int, help="Number of nodes in the network (not used with --t grid)")
-parser.add_argument("--t", default="ring", type=str, choices=['ring', 'line', 'binary-tree', 'grid'], help="The topology to create for this network")
-parser.add_argument("--d", default="bi", type=str, choices=['uni','bi'], help="Uni or bi-directional links (not used with --t grid")
+parser.add_argument("--t", default="ring", type=str, choices=['ring', 'line', 'binary-tree', 'grid', 'mesh', 'star'], help="The topology to create for this network")
+parser.add_argument("--d", default="bi", type=str, choices=['uni','bi'], help="Uni or bi-directional links (not used with --t grid, mesh, or star")
 parser.add_argument("--b", default="0.0", type=str, help="Percentage of broadcast loss given as a string (default \"0.0\")")
 parser.add_argument("--l", default="0.0", type=str, help="Percentage of packet loss given as a string (default \"0.0\")")
 parser.add_argument("--e", default="", type=str, help="Address of a compiled RIOT project .elf file to run on all the nodes")
@@ -37,7 +37,7 @@ def generateNodes(f, topo, size, binary="", rows=None, cols=None, treeNodes=None
             for y in range(0,cols):
                 ident = str(chr(letter+x)) + str(y)
                 addNode(f, ident, binary)
-    elif topo == "ring" or topo == "line":
+    elif topo == "ring" or topo == "line" or topo == "mesh":
         for x in range(0,size):
             addNode(f, str(x), binary)
     elif topo == "binary-tree":
@@ -55,6 +55,10 @@ def generateNodes(f, topo, size, binary="", rows=None, cols=None, treeNodes=None
                     break
             if count >= size:
                 break
+    elif topo == "star":
+        addNode(f, "root", binary)
+        for x in range(0,size-1):
+            addNode(f, str(x), binary)
     return;
 
 def assignGridNeighbors(f, rows, cols, blos, loss, uni):
@@ -126,6 +130,12 @@ elif topo == "binary-tree":
 elif topo == "line":
     name = "line" + str(size)
     description = str(size) + " nodes in a line"
+elif topo == "mesh":
+    name = "mesh" + str(size)
+    description = str(size) + " nodes in a complete mesh"
+elif topo == "star":
+    name = "star" + str(size)
+    description = str(size-1) + " nodes each connected only to one central node"
 fName = name + ".xml"
 
 # CREATE FILE
@@ -153,10 +163,10 @@ f.write("""        </nodes>
 
 # START NEIGHBOR ASSIGNMENT LOOPS
 
+existingLinks = []
 if topo == "grid":
     assignGridNeighbors(f, rows, cols, blos, loss, uni)
 elif topo == "ring":
-    existingLinks = []
     for x in range(0,size):
         fromNode = str(x)
         toNode = str(x+1)
@@ -164,7 +174,6 @@ elif topo == "ring":
             toNode = str(0)
         addNeighbor(f, existingLinks, blos, fromNode, loss, toNode, uni)   
 elif topo == "binary-tree":
-    existingLinks = []
     depth = int(math.log(size+1,2))
     count = 1
     if size >= 2:
@@ -187,12 +196,22 @@ elif topo == "binary-tree":
             if count >= size:
                 break
 elif topo == "line":
-    existingLinks = []
     for x in range(0,size):
         fromNode = str(x)
         toNode = str(x+1)
         if x+1 != size:
             addNeighbor(f, existingLinks, blos, fromNode, loss, toNode, uni) 
+elif topo == "mesh":
+    for x in range(0,size):
+        fromNode = str(x)
+        for y in range(x+1,size):
+            toNode = str(y)
+            addNeighbor(f, existingLinks, blos, fromNode, loss, toNode, "false")
+elif topo == "star":
+    fromNode = "root"
+    for x in range(0,size-1):
+        toNode = str(x)
+        addNeighbor(f, existingLinks, blos, fromNode, loss, toNode, "false")
 
 
 # END NEIGHBOR ASSIGNMENT LOOPS
@@ -214,7 +233,7 @@ if topo == "grid":
         for y in range(0,cols):
             ident = str(chr(letter+x)) + str(y)
             f.write("sudo ip link delete %s_%s\n" % (name,ident))
-elif topo == "ring" or topo == "line":
+elif topo == "ring" or topo == "line" or topo == "mesh":
     for x in range(0,size):
         f.write("sudo ip link delete %s_%s\n" % (name,str(x)))
 elif topo == "binary-tree":
@@ -231,6 +250,12 @@ elif topo == "binary-tree":
                 break
         if count >= size:
             break
+elif topo == "star":   
+    f.write("sudo ip link delete %s_%s\n" % (name,"root"))
+    for x in range(0,size-1):
+        ident = str(x)
+        f.write("sudo ip link delete %s_%s\n" % (name,ident))
+
 f.write("make desvirt-undefine TOPO=%s\n" % name)
 
 f.close()

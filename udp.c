@@ -22,22 +22,31 @@
 #include "net/sock/udp.h"
 #include "net/ipv6/addr.h"
 
-
 #define SERVER_MSG_QUEUE_SIZE   (8)
 #define SERVER_BUFFER_SIZE      (64)
 #define MAX_IPC_MESSAGE_SIZE    (256)
 
-static bool server_running = false;
-static sock_udp_t sock;
+// External functions defs
+extern int ipc_msg_send(char *message, kernel_pid_t destinationPID, bool blocking);
+extern int ipc_msg_reply(char *message, msg_t incoming);
+extern int ipc_msg_send_receive(char *message, kernel_pid_t destinationPID, msg_t *response, uint16_t type);
+
+// Forward declarations
+void *_udp_server(void *args);
+int udp_send(int argc, char **argv);
+int udp_send_multi(int argc, char **argv);
+int udp_server(int argc, char **argv);
+
+// Data structures (i.e. stacks, queues, message structs, etc)
 static char server_buffer[SERVER_BUFFER_SIZE];
 static char server_stack[THREAD_STACKSIZE_DEFAULT];
 static msg_t server_msg_queue[SERVER_MSG_QUEUE_SIZE];
+static sock_udp_t sock;
 static msg_t msg_in, msg_out;
 
+// State variables
+static bool server_running = false;
 const int SERVER_PORT = 3142;
-
-bool runningND = false;
-bool runningLE = false;
 
 void *_udp_server(void *args)
 {

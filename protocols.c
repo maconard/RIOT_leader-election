@@ -15,29 +15,29 @@
 #include "thread.h"
 #include "xtimer.h"
 
-// Networking includes
-#include "net/sock/udp.h"
-#include "net/ipv6/addr.h"
-
 #define MAIN_QUEUE_SIZE         (8)
 #define MAX_IPC_MESSAGE_SIZE    (256)
 #define IPV6_ADDRESS_LEN        (46)
 #define MAX_NEIGHBORS           (20)
 
-// Data structures (i.e. stacks, queues, message structs, etc)
-static char protocol_stack[THREAD_STACKSIZE_DEFAULT];
-static msg_t _protocol_msg_queue[MAIN_QUEUE_SIZE];
-static msg_t msg_in, msg_out;
+// External functions defs
+extern int ipc_msg_send(char *message, kernel_pid_t destinationPID, bool blocking);
+extern int ipc_msg_reply(char *message, msg_t incoming);
+extern int ipc_msg_send_receive(char *message, kernel_pid_t destinationPID, msg_t *response, uint16_t type);
 
 // Forward declarations
 kernel_pid_t leader_election(int argc, char **argv);
 void *_leader_election(void *argv);
 
+// Data structures (i.e. stacks, queues, message structs, etc)
+static char protocol_stack[THREAD_STACKSIZE_DEFAULT];
+static msg_t _protocol_msg_queue[MAIN_QUEUE_SIZE];
+static msg_t msg_in;//, msg_out;
+
 // ************************************
 // START MY CUSTOM THREAD DEFS
 
-kernel_pid_t leader_election(int argc, char **argv)
-{
+kernel_pid_t leader_election(int argc, char **argv) {
     if (argc != 2) {
         puts("Usage: leader_election <port>");
         return 0;
@@ -59,12 +59,7 @@ void *_leader_election(void *argv) {
 
     msg_init_queue(_protocol_msg_queue, MAIN_QUEUE_SIZE);
     kernel_pid_t udpServerPID = 0;
-    char *msg_content = malloc(MAX_IPC_MESSAGE_SIZE);
-    if(msg_content == NULL) {
-        (void) puts("LE: failed to allocate memory");
-        return 0;
-    }
-    memset(msg_content, 0, MAX_IPC_MESSAGE_SIZE);
+    char msg_content[MAX_IPC_MESSAGE_SIZE];
 
     char leader[IPV6_ADDRESS_LEN] = "unknown";
 
@@ -86,28 +81,20 @@ void *_leader_election(void *argv) {
         res = msg_try_receive(&msg_in);
         //printf("LE: after msg_try_receive, code=%d\n", res);
         if (res == 1) {
-            if (msg_in.type == 0 && udpServerPID == (kernel_pid_t)0) {
+            if (msg_in.type == 0 && udpServerPID == (kernel_pid_t)0) { // process UDP server PID
 
-                // process UDP server PID
                 (void) puts("LE: in type==0 block");
                 udpServerPID = (kernel_pid_t)(*(int*)msg_in.content.ptr);
                 printf("LE: Protocol thread recorded %" PRIkernel_pid " as the UDP server thread's PID\n", udpServerPID);
 
-            } else if (msg_in.type == 1) {
+            } else if (msg_in.type == 1) { // report about the leader
 
-                // report about the leader
                 printf("LE: in type==1 block, content=%s\n", (char*)msg_in.content.ptr);
-                char msg[MAX_IPC_MESSAGE_SIZE];
-                strncpy(msg, leader, strlen(leader)+1);
-                msg_out.content.ptr = &msg;
-                msg_out.type = (uint16_t)strlen(msg_out.content.ptr);
-                printf("LE: replying with msg=%s, size=%u\n", (char*)msg_out.content.ptr, (uint16_t)msg_out.type);
-                msg_reply(&msg_in, &msg_out);
-                //msg_try_send(&msg_out, msg_out.sender_pid);
+                printf("LE: replying with msg=%s, size=%u\n", leader, strlen(leader));
+                ipc_msg_reply(leader, msg_in);
 
-            } else if (msg_in.type > 1 && msg_in.type < MAX_IPC_MESSAGE_SIZE) {
+            } else if (msg_in.type > 1 && msg_in.type < MAX_IPC_MESSAGE_SIZE) { // process string message of size msg_in.type
 
-                // process string message of size msg_in.type
                 printf("LE: in type>1 block, type=%u\n", (uint16_t)msg_in.type);
                 strncpy(msg_content, (char*)msg_in.content.ptr, (uint16_t)msg_in.type+1);
                 printf("LE: Protocol thread received IPC message: %s from PID=%" PRIkernel_pid "\n", msg_content, msg_in.sender_pid);

@@ -53,8 +53,8 @@ My python script that can generate line, ring, tree, and grid topologies while s
 --r, default=2, type=int, choices=range(1,27), Number of rows in the grid from 1 to 26 (only used with --t grid)  
 --c, default=2, type=int, Number of cols in the grid (only used with --t grid)  
 --s, default=4, type=int, Number of nodes in the network (not used with --t grid)  
---t, default="ring", type=str, choices=['ring', 'line', 'binary-tree', 'grid'], The topology to create for this network  
---d, default="bi", type=str, choices=['uni','bi'], Uni or bidirectional links (not used with --t grid)  
+--t, default="ring", type=str, choices=['ring', 'line', 'binary-tree', 'grid', 'mesh', 'star'], The topology to create for this network  
+--d, default="bi", type=str, choices=['uni','bi'], Uni or bidirectional links (not used with --t grid, mesh, star)  
 --b, default="0.0", type=str, Percentage of broadcast loss given as a string (default "0.0")  
 --l, default="0.0", type=str, Percentage of packet loss given as a string (default "0.0")  
 --e, default="", type=str, Address of a compiled RIOT project .elf file to run on all the nodes  
@@ -74,7 +74,11 @@ binary-tree - A tree of arity=2, filled in top to bottom left to right. As an ex
 ```
 where all the links a bidirectional. A unidirectional tree (`--d uni`) is possible but not very meaningfull, presenting a model where the root can send orders down the tree but can never recieve any information back up the tree (may work for a scenario where orders to do things need to be given and the leaf nodes do not collect any data or contribute to computation).  
 
-grid - An `r x c` matrix of nodes where every node can bidirectionally communicate with the `(r-1,c)`, `(r,c-1)`, `(r+1,c)`, `(r,c+1)` neighbor nodes (if they exist -- it doesn't wrap around the edge of the grid). `--d uni` is not supported as there's no effective way to automate that; you would have to manually define for every grid node where the unidirectional links are.
+grid - An `r x c` matrix of nodes where every node can bidirectionally communicate with the `(r-1,c)`, `(r,c-1)`, `(r+1,c)`, `(r,c+1)` neighbor nodes (if they exist -- it doesn't wrap around the edge of the grid). `--d uni` is not supported as there's no effective way to automate that; you would have to manually define for every grid node where the unidirectional links are.  
+
+mesh - All `N` nodes are neighboring every other node -- everyone can talk to anyone (i.e. a node's local neighborhood is the whole network).  
+
+star - One central hub and the remaining `N-1` nodes are each connected to only it. With this topology if an outer node dies it doesn't affect any routes through the network, but the central hub node has a lot of traffic.
 
 ### Output
 - A topology .XML file intended to be consumed by RIOT's desvirt/vnet tools.  

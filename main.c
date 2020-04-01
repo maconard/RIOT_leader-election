@@ -29,10 +29,6 @@
 #define IPV6_ADDRESS_LEN        (46)
 #define MAX_NEIGHBORS           (20)
 
-// Data structures (i.e. stacks, queues, message structs, etc)
-static msg_t _main_msg_queue[MAIN_QUEUE_SIZE];
-static msg_t msg_in, msg_out;
-
 // External functions defs
 extern int udp_send(int argc, char **argv);
 extern int udp_server(int argc, char **argv);
@@ -42,6 +38,13 @@ extern kernel_pid_t leader_election(int argc, char **argv);
 static int hello_world(int argc, char **argv);
 static int who_is_leader(int argc, char **argv);
 static int run(int argc, char **argv);
+int ipc_msg_send_receive(char *message, kernel_pid_t destinationPID, msg_t *response, uint16_t type);
+int ipc_msg_send(char *message, kernel_pid_t destinationPID, bool blocking);
+int ipc_msg_reply(char *message, msg_t incoming);
+
+// Data structures (i.e. stacks, queues, message structs, etc)
+static msg_t _main_msg_queue[MAIN_QUEUE_SIZE];
+static msg_t msg_in;//, msg_out;
 
 // State variables
 bool running_LE = false;
@@ -68,17 +71,12 @@ static int who_is_leader(int argc, char **argv) {
     char msg[14] = "who_is_leader";
     char leader[IPV6_ADDRESS_LEN];
 
-    msg_out.type = 1;
-    msg_out.content.ptr = &msg;
-
-    msg_send_receive(&msg_out, &msg_in, protocolPID);
-    sprintf(leader, "%s", (char*)msg_in.content.ptr);
+    ipc_msg_send_receive(msg, protocolPID, &msg_in, 1);
+    strncpy(leader, (char*)msg_in.content.ptr, strlen((char*)msg_in.content.ptr)+1);
     printf("MAIN: The current leader is: %s\n", leader);
 
     // test msg
-    msg_out.content.ptr = &msg;
-    msg_out.type = strlen(msg);
-    msg_send(&msg_in, protocolPID);
+    ipc_msg_send(msg, protocolPID, false);
 
     return 0;
 }
@@ -92,6 +90,55 @@ const shell_command_t shell_commands[] = {
     {"leader", "reports who the current leader is", who_is_leader},
     { NULL, NULL, NULL }
 };
+
+// IPC HELPER FUNCTIONS
+// send message to destinationPID and block for a reply
+int ipc_msg_send_receive(char *message, kernel_pid_t destinationPID, msg_t *response, uint16_t type) {
+    char msg[MAX_IPC_MESSAGE_SIZE];
+    msg_t msg_out;
+    strncpy(msg, message, strlen(message)+1);
+    msg_out.content.ptr = &msg;
+    msg_out.type = type;
+
+    printf("DEBUG: send/rec1 %s, %s, %s\n", message, msg, (char*)msg_out.content.ptr);
+    
+    int res = msg_send_receive(&msg_out, response, destinationPID);
+
+    printf("DEBUG: send/rec2 %s, %s\n", (char*)msg_out.content.ptr, (char*)msg_in.content.ptr);
+    
+    return res;
+}
+
+// send message to destinationPID, blocking or not
+int ipc_msg_send(char *message, kernel_pid_t destinationPID, bool blocking) {\
+    msg_t msg_out;
+    msg_out.content.ptr = message;
+    msg_out.type = (uint16_t)strlen(message);
+
+    printf("DEBUG: send %s, %s, %s\n", message, msg, (char*)msg_out.content.ptr);
+    
+    int res;
+    if (blocking) {
+        res = msg_send(&msg_out, destinationPID);
+    } else {
+        res = msg_try_send(&msg_out, destinationPID);
+    }
+    
+    return res;
+}
+
+// respond to incoming with message
+int ipc_msg_reply(char *message, msg_t incoming) {
+    msg_t msg_out;
+    msg_out.content.ptr = message;
+    msg_out.type = (uint16_t)strlen(message);
+
+    printf("DEBUG: reply %s, %s\n", message, (char*)msg_out.content.ptr);
+  
+    int res = msg_reply(&incoming, &msg_out);
+
+    return res;
+}
 
 // initiates leader election
 static int run(int argc, char **argv) {
