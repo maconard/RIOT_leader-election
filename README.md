@@ -61,7 +61,7 @@ My Scripts
 ### Topology Meanings
 1. ring - All nodes are each connected to two other nodes in a circle. The links look like `0 -> 1 -> 2 -> ... -> N -> 0`, where unidirectional ring nodes receive from `(i-1)%N` and send to `(i+1)%N`, while bidirectional ring nodes can send and receive with both neighbors.  
 2. line - A straight line of nodes, like a ring without the `N -> 0` link. A unidirectional line is not meaningful, as one end can only ever send and the other can only ever recieve, while a bidirectional line can communicate both directions.  
-3. binary-tree - A tree of arity=2, filled in top to bottom left to right. As an example, the command `python mac_topology_gen.py --t binary-tree --s 6` would generate the following topology:  
+3. binary-tree - A tree of arity=2, filled in top to bottom left to right. As an example, the command `python mac_topology_gen.py --t binary-tree --s 6` would generate the following topology:
 ```
       root
      /    \
