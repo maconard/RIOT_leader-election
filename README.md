@@ -81,8 +81,9 @@ mesh - All `N` nodes are neighboring every other node -- everyone can talk to an
 star - One central hub and the remaining `N-1` nodes are each connected to only it. With this topology if an outer node dies it doesn't affect any routes through the network, but the central hub node has a lot of traffic.
 
 ### Output
-- A topology .XML file intended to be consumed by RIOT's desvirt/vnet tools.  
-- A cleanup .sh script that will delete all the taps/tuns that desvirt/vnet will create for the network.
+- A topology.xml file intended to be consumed by RIOT's desvirt/vnet tools.  
+- A cleanup.sh script that will delete all the taps/tuns that desvirt/vnet will create for the network. Takes your project name as the one command line argument, in order to cleanup .elf files.  
+- An elf.sh install script to duplicate your project elf file for each node ID (run after you've made your project). Takes your project name as its one command line argument, in order to duplicate the .elf file.
 
 ## `install_topology` 
 A simple script that moves the output file from the topology generator to the desvirt working directory.

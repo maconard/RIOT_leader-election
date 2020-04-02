@@ -3,4 +3,5 @@ bin/
 bin/*
 .git
 *_cleanup.sh
-
+*.sh
+*.xml
