@@ -42,7 +42,7 @@ The `txtsnd` command allows you to send a simple string directly over the link l
 My Protocols
 ==========
 
-Neighbor Discovery will run automatically as soon as the protocols thread has established communication with the UDP thread. Leader Election will initiate after some fixed delay and at least two neighbors have been discovery.
+Neighbor Discovery will run automatically as soon as the protocols thread has established communication with the UDP thread. Leader Election will initiate after some fixed delay and at least two neighbors have been discovered.
 
 My Scripts
 ==========
