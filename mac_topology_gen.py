@@ -17,10 +17,29 @@ parser.add_argument("--d", default="bi", type=str, choices=['uni','bi'], help="U
 parser.add_argument("--b", default="0.0", type=str, help="Percentage of broadcast loss given as a string (default \"0.0\")")
 parser.add_argument("--l", default="0.0", type=str, help="Percentage of packet loss given as a string (default \"0.0\")")
 parser.add_argument("--e", default="", type=str, help="Address of a compiled RIOT project .elf file to run on all the nodes")
+parser.add_argument("--m", default=0, type=int, help="Whether or not to append node names to binary file")
+
+# PARSING
+args = parser.parse_args()
+rows = args.r
+cols = args.c
+size = args.s
+topo = args.t
+dire = args.d
+blos = args.b
+loss = args.l
+binn = args.m
+if binn == 1:
+    riot = args.e[:-4]
+else:
+    riot = args.e
 
 # FUNCTIONS
 def addNode(f, name, binary):
-    f.write("            <node binary=\"%s%s.elf\" name=\"%s\" type=\"riot_native\"/>\n" % (binary, name, name))
+    if binn == 1:
+        f.write("            <node binary=\"%s%s.elf\" name=\"%s\" type=\"riot_native\"/>\n" % (binary, name, name))
+    else:
+        f.write("            <node binary=\"%s\" name=\"%s\" type=\"riot_native\"/>\n" % (binary, name))
     return;
 
 def addNeighbor(f, existingLinks, blos, fromNode, loss, toNode, uni):
@@ -88,17 +107,6 @@ def assignGridNeighbors(f, rows, cols, blos, loss, uni):
                 if (fromNode,toNode) not in existingLinks:
                     addNeighbor(f, existingLinks, blos, fromNode, loss, toNode, "false")
     return;
-
-# PARSING
-args = parser.parse_args()
-rows = args.r
-cols = args.c
-size = args.s
-topo = args.t
-dire = args.d
-blos = args.b
-loss = args.l
-riot = args.e[:-4]
 
 numNodes = rows * cols  # number of grid nodes
 letter = 97             # start of the alphabet
