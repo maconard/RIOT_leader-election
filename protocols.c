@@ -4,6 +4,8 @@
  * Purpose: Contains the protocol code for leader election/neighbor discovery.
  */
 
+#define ENABLE_LEADER (1)
+
 // Standard C includes
 #include <stdbool.h>
 #include <stdint.h>
@@ -110,8 +112,8 @@ void *_leader_election(void *argv) {
     uint64_t lastLE = xtimer_now_usec64();
     uint64_t timeToRun;
     uint64_t now;
-    uint64_t startTimeLE;
-    uint64_t endTimeLE;
+    uint64_t startTimeLE = 0;
+    uint64_t endTimeLE = 0;
     uint64_t convergenceTimeLE;
     bool hasElectedLeader = false;
     bool runningND = false;
@@ -278,7 +280,7 @@ void *_leader_election(void *argv) {
             // check if it's time to run, then initialize
             now = xtimer_now_usec64();
             timeToRun = lastLE + delayLE;
-            if (!hasElectedLeader && allowLE && now > timeToRun) {
+            if (ENABLE_LEADER == 1 && !hasElectedLeader && allowLE && now > timeToRun) {
                 lastLE = xtimer_now_usec64();
                 (void) puts("LE: Running leader election...");
                 runningLE = true;

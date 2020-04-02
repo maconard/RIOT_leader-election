@@ -177,9 +177,9 @@ elif topo == "binary-tree":
     depth = int(math.log(size+1,2))
     count = 1
     if size >= 2:
-        addNeighbor(f, existingLinks, blos, "root", loss, "a1", uni)
+        addNeighbor(f, existingLinks, blos, "root", loss, "a0", uni)
     if size>= 3:
-        addNeighbor(f, existingLinks, blos, "root", loss, "a2", uni)
+        addNeighbor(f, existingLinks, blos, "root", loss, "a1", uni)
     if size>= 4:
         for x in range(2,depth+1):
             for y in range(0,pow(2,x-1)):
