@@ -42,7 +42,7 @@ The `txtsnd` command allows you to send a simple string directly over the link l
 My Protocols
 ==========
 
-To initiate leader election, run the `elect_leader start` command in the RIOT shell. Note that this is not implemented yet; it just starts a custom UDP server and waits.
+Neighbor Discovery will run automatically as soon as the protocols thread has established communication with the UDP thread. Leader Election will initiate after some fixed delay and at least two neighbors have been discovery.
 
 My Scripts
 ==========
