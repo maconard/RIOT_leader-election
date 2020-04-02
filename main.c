@@ -24,7 +24,7 @@
 #include "net/gnrc/ndp.h"
 #include "net/gnrc/pkt.h"
 
-#define MAIN_QUEUE_SIZE         (8)
+#define MAIN_QUEUE_SIZE         (32)
 #define MAX_IPC_MESSAGE_SIZE    (256)
 #define IPV6_ADDRESS_LEN        (46)
 #define MAX_NEIGHBORS           (20)
@@ -71,7 +71,7 @@ static int who_is_leader(int argc, char **argv) {
     char msg[14] = "who_is_leader";
     char leader[IPV6_ADDRESS_LEN];
 
-    ipc_msg_send_receive(msg, protocolPID, &msg_in, 1);
+    ipc_msg_send_receive(msg, protocolPID, &msg_in, 2);
     strncpy(leader, (char*)msg_in.content.ptr, strlen((char*)msg_in.content.ptr)+1);
     printf("MAIN: The current leader is: %s\n", leader);
 
@@ -100,11 +100,11 @@ int ipc_msg_send_receive(char *message, kernel_pid_t destinationPID, msg_t *resp
     msg_out.content.ptr = &msg;
     msg_out.type = type;
 
-    printf("DEBUG: send/rec1 %s, %s, %s\n", message, msg, (char*)msg_out.content.ptr);
+    printf("DEBUG: *send*/rec %s to %" PRIkernel_pid "\n", (char*)msg_out.content.ptr, destinationPID);
     
     int res = msg_send_receive(&msg_out, response, destinationPID);
 
-    printf("DEBUG: send/rec2 %s, %s\n", (char*)msg_out.content.ptr, (char*)msg_in.content.ptr);
+    printf("DEBUG: send/*rec2* %s\n", (char*)msg_in.content.ptr);
     
     return res;
 }
@@ -114,8 +114,9 @@ int ipc_msg_send(char *message, kernel_pid_t destinationPID, bool blocking) {\
     msg_t msg_out;
     msg_out.content.ptr = message;
     msg_out.type = (uint16_t)strlen(message);
+    blocking = true;
 
-    printf("DEBUG: send %s, %s, %s\n", message, msg, (char*)msg_out.content.ptr);
+    printf("DEBUG: send %s to %" PRIkernel_pid "\n", (char*)msg_out.content.ptr, destinationPID);
     
     int res;
     if (blocking) {
@@ -133,7 +134,7 @@ int ipc_msg_reply(char *message, msg_t incoming) {
     msg_out.content.ptr = message;
     msg_out.type = (uint16_t)strlen(message);
 
-    printf("DEBUG: reply %s, %s\n", message, (char*)msg_out.content.ptr);
+    printf("DEBUG: reply %s\n", (char*)msg_out.content.ptr);
   
     int res = msg_reply(&incoming, &msg_out);
 
