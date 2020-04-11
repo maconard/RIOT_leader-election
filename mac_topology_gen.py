@@ -8,16 +8,16 @@ import os
 import stat
 
 # PARSING RULES
-parser = argparse.ArgumentParser(description='Parsing for Michael\'s grid generator.')
-parser.add_argument("--r", default=2, type=int, choices=range(1,27), help="Number of rows in the grid from 1 to 26 (only used with --t grid)")
-parser.add_argument("--c", default=2, type=int, help="Number of cols in the grid (only used with --t grid)")
-parser.add_argument("--s", default=4, type=int, help="Number of nodes in the network (not used with --t grid)")
-parser.add_argument("--t", default="ring", type=str, choices=['ring', 'line', 'binary-tree', 'grid', 'mesh', 'star'], help="The topology to create for this network")
-parser.add_argument("--d", default="bi", type=str, choices=['uni','bi'], help="Uni or bi-directional links (not used with --t grid, mesh, or star")
+parser = argparse.ArgumentParser(description='Parsing for Michael\'s topology generator.')
+parser.add_argument("--r", default=2, type=int, choices=range(1,27), help="Number of rows in the grid/mesh from 1 to 26")
+parser.add_argument("--c", default=2, type=int, help="Number of cols in the grid/mesh")
+parser.add_argument("--s", default=4, type=int, help="Number of nodes in the network (not used with --t grid/mesh)")
+parser.add_argument("--t", default="ring", type=str, choices=['ring', 'line', 'binary-tree', 'grid', 'mesh', 'star', 'complete'], help="The topology to create for this network")
+parser.add_argument("--d", default="bi", type=str, choices=['uni','bi'], help="Uni or bi-directional links (not used with --t grid, mesh, complete, or star")
 parser.add_argument("--b", default="0.0", type=str, help="Percentage of broadcast loss given as a string (default \"0.0\")")
 parser.add_argument("--l", default="0.0", type=str, help="Percentage of packet loss given as a string (default \"0.0\")")
 parser.add_argument("--e", default="", type=str, help="Address of a compiled RIOT project .elf file to run on all the nodes")
-parser.add_argument("--m", default=0, type=int, help="Whether or not to append node names to binary file")
+parser.add_argument("--m", default=0, type=int, choices=[0,1], help="Whether or not to append node names to binary file")
 
 # PARSING
 args = parser.parse_args()
@@ -51,12 +51,12 @@ def addNeighbor(f, existingLinks, blos, fromNode, loss, toNode, uni):
 
 def generateNodes(f, topo, size, binary="", rows=None, cols=None, treeNodes=None):
     letter = 97
-    if topo == "grid":
+    if topo == "grid" or topo == "mesh":
         for x in range(0,rows):
             for y in range(0,cols):
                 ident = str(chr(letter+x)) + str(y)
                 addNode(f, ident, binary)
-    elif topo == "ring" or topo == "line" or topo == "mesh":
+    elif topo == "ring" or topo == "line" or topo == "complete":
         for x in range(0,size):
             addNode(f, str(x), binary)
     elif topo == "binary-tree":
@@ -108,6 +108,54 @@ def assignGridNeighbors(f, rows, cols, blos, loss, uni):
                     addNeighbor(f, existingLinks, blos, fromNode, loss, toNode, "false")
     return;
 
+def assignMeshNeighbors(f, rows, cols, blos, loss, uni):
+    existingLinks = []
+    letter = 97
+    for x in range(0,rows):
+        for y in range(0,cols):
+            fromNode = str(chr(letter+x)) + str(y)
+
+            if x-1 >= 0 and x-1 < rows:     # neighbor above me
+                toNode = str(chr(letter+x-1)) + str(y)
+                if (fromNode,toNode) not in existingLinks:
+                    addNeighbor(f, existingLinks, blos, fromNode, loss, toNode, "false")
+
+            if y+1 >= 0 and y+1 < cols:     # neighbor to my right
+                toNode = str(chr(letter+x)) + str(y+1)
+                if (fromNode,toNode) not in existingLinks:
+                    addNeighbor(f, existingLinks, blos, fromNode, loss, toNode, "false")
+
+            if x+1 >= 0 and x+1 < rows:     # neighbor below me
+                toNode = str(chr(letter+x+1)) + str(y)
+                if (fromNode,toNode) not in existingLinks:
+                    addNeighbor(f, existingLinks, blos, fromNode, loss, toNode, "false")
+
+            if y-1 >= 0 and y-1 < cols:     # neighbor to my left
+                toNode = str(chr(letter+x)) + str(y-1)
+                if (fromNode,toNode) not in existingLinks:
+                    addNeighbor(f, existingLinks, blos, fromNode, loss, toNode, "false")
+
+            if x-1 >= 0 and x-1 < rows and y-1 >= 0 and y-1 < cols:     # neighbor up/left
+                toNode = str(chr(letter+x-1)) + str(y-1)
+                if (fromNode,toNode) not in existingLinks:
+                    addNeighbor(f, existingLinks, blos, fromNode, loss, toNode, "false")
+
+            if x-1 >= 0 and x-1 < rows and y+1 >= 0 and y+1 < cols:     # neighbor up/right
+                toNode = str(chr(letter+x-1)) + str(y+1)
+                if (fromNode,toNode) not in existingLinks:
+                    addNeighbor(f, existingLinks, blos, fromNode, loss, toNode, "false")
+
+            if x+1 >= 0 and x+1 < rows and y-1 >= 0 and y-1 < cols:     # neighbor down/left
+                toNode = str(chr(letter+x+1)) + str(y-1)
+                if (fromNode,toNode) not in existingLinks:
+                    addNeighbor(f, existingLinks, blos, fromNode, loss, toNode, "false")
+
+            if x+1 >= 0 and x+1 < rows and y+1 >= 0 and y+1 < cols:     # neighbor down/right
+                toNode = str(chr(letter+x+1)) + str(y+1)
+                if (fromNode,toNode) not in existingLinks:
+                    addNeighbor(f, existingLinks, blos, fromNode, loss, toNode, "false")
+    return;
+
 numNodes = rows * cols  # number of grid nodes
 letter = 97             # start of the alphabet
 
@@ -120,7 +168,10 @@ else:
 # NETWORK/FILE NAME
 if topo == "grid":
     name = "grid" + str(numNodes) + "-" + str(rows) + "x" + str(cols)
-    description = str(numNodes) + " nodes in a regular " + str(rows) + "x" + str(cols) + " grid"
+    description = str(numNodes) + " nodes in a regular " + str(rows) + "x" + str(cols) + " grid (90 deg)"
+elif topo == "mesh":
+    name = "mesh" + str(numNodes) + "-" + str(rows) + "x" + str(cols)
+    description = str(numNodes) + " nodes in a regular " + str(rows) + "x" + str(cols) + " mesh (45 deg)"
 elif topo == "ring":
     if dire == "uni":
         name = "uni-ring" + str(size)
@@ -138,9 +189,9 @@ elif topo == "binary-tree":
 elif topo == "line":
     name = "line" + str(size)
     description = str(size) + " nodes in a line"
-elif topo == "mesh":
-    name = "mesh" + str(size)
-    description = str(size) + " nodes in a complete mesh"
+elif topo == "complete":
+    name = "complete" + str(size)
+    description = str(size) + " nodes in a complete graph"
 elif topo == "star":
     name = "star" + str(size)
     description = str(size-1) + " nodes each connected only to one central node"
@@ -173,7 +224,9 @@ f.write("""        </nodes>
 
 existingLinks = []
 if topo == "grid":
-    assignGridNeighbors(f, rows, cols, blos, loss, uni)
+    assignGridNeighbors(f, rows, cols, blos, loss, "false")
+elif topo == "mesh":
+    assignMeshNeighbors(f, rows, cols, blos, loss, "false")
 elif topo == "ring":
     for x in range(0,size):
         fromNode = str(x)
@@ -209,7 +262,7 @@ elif topo == "line":
         toNode = str(x+1)
         if x+1 != size:
             addNeighbor(f, existingLinks, blos, fromNode, loss, toNode, uni) 
-elif topo == "mesh":
+elif topo == "complete":
     for x in range(0,size):
         fromNode = str(x)
         for y in range(x+1,size):
