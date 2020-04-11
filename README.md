@@ -50,11 +50,11 @@ My Scripts
 My python script that can generate line, ring, tree, and grid topologies while specifying size, broadcast packet loss, incoming packet loss, and RIOT executable files
 
 ### Command Line Arguments
---r, default=2, type=int, choices=range(1,27), Number of rows in the grid from 1 to 26 (only used with --t grid)  
---c, default=2, type=int, Number of cols in the grid (only used with --t grid)  
---s, default=4, type=int, Number of nodes in the network (not used with --t grid)  
---t, default="ring", type=str, choices=['ring', 'line', 'binary-tree', 'grid', 'mesh', 'star'], The topology to create for this network  
---d, default="bi", type=str, choices=['uni','bi'], Uni or bidirectional links (not used with --t grid, mesh, star)  
+--r, default=2, type=int, choices=range(1,27), Number of rows in the grid/mesh from 1 to 26  
+--c, default=2, type=int, Number of cols in the grid/mesh  
+--s, default=4, type=int, Number of nodes in the network (not used with --t grid/mesh)  
+--t, default="ring", type=str, choices=['ring', 'line', 'binary-tree', 'grid', 'mesh', 'star', 'complete'], The topology to create for this network  
+--d, default="bi", type=str, choices=['uni','bi'], Uni or bidirectional links (not used with --t grid/mesh/star/complete)  
 --b, default="0.0", type=str, Percentage of broadcast loss given as a string (default "0.0")  
 --l, default="0.0", type=str, Percentage of packet loss given as a string (default "0.0")  
 --e, default="", type=str, Address of a compiled RIOT project .elf file to run on all the nodes  
@@ -76,24 +76,26 @@ where all the links a bidirectional. A unidirectional tree (`--d uni`) is possib
 
 grid - An `r x c` matrix of nodes where every node can bidirectionally communicate with the `(r-1,c)`, `(r,c-1)`, `(r+1,c)`, `(r,c+1)` neighbor nodes (if they exist -- it doesn't wrap around the edge of the grid). `--d uni` is not supported as there's no effective way to automate that; you would have to manually define for every grid node where the unidirectional links are.  
 
-mesh - All `N` nodes are neighboring every other node -- everyone can talk to anyone (i.e. a node's local neighborhood is the whole network).  
+mesh - A grid (above) with 45 degree neighbors instead of 90 degree neighbors  
+
+complete - All `N` nodes are neighboring every other node -- everyone can talk to anyone (i.e. a node's local neighborhood is the whole network).  
 
 star - One central hub and the remaining `N-1` nodes are each connected to only it. With this topology if an outer node dies it doesn't affect any routes through the network, but the central hub node has a lot of traffic.
 
 ### Output
 - A topology.xml file intended to be consumed by RIOT's desvirt/vnet tools.  
 - A cleanup.sh script that will delete all the taps/tuns that desvirt/vnet will create for the network. Takes your project name as the one command line argument, in order to cleanup .elf files.  
-- An elf.sh install script to duplicate your project elf file for each node ID (run after you've made your project). Takes your project name as its one command line argument, in order to duplicate the .elf file.
+- An elf.sh install script to duplicate your project elf file for each node ID (run after you've made your project) if you need a copy of it for each node (use topology gen with --m 1). Takes your project name as its one command line argument, in order to duplicate the correct .elf file.
 
 ## `install_topology` 
-A simple script that moves the output file from the topology generator to the desvirt working directory.
+A simple script that moves the output file from the topology generator to the desvirt working directory. Depends on the RIOTBASE environment variable.
 
 ### Command Line Arguments
 
 $1: the topology.xml file to install for desvirt
 
 ## `riot` 
-A simple script that makes it easier to use desvirt
+A simple script that makes it easier to use desvirt. Requires that desvirt is already built.
 
 ### Command Line Arguments
 
@@ -129,13 +131,13 @@ cd /path/to/RIOT/dist/tools/desvirt/desvirt && ./vnet -s -n uni-ring5
 ...output from defining node links/neighbors
 ...output from initiating RIOT processes
 
-> riot list
+> ./riot list
 cd /path/to/RIOT/dist/tools/desvirt/desvirt && ./vnet -l
 Network Name         State
 ----------------------------
 uni-ring5            running
 
-> riot stop uni-ring5
+> ./riot stop uni-ring5
 cd /path/to/RIOT/dist/tools/desvirt/desvirt && ./vnet -q -n uni-ring5
 vnet           : Loaded statefile .desvirt/lib/uni-ring5.macs.
 vnet           : Loaded statefile .desvirt/lib/uni-ring5.taps.
@@ -145,7 +147,7 @@ vnet           : Shutting down bridge and links...
 vnet           : Shutting down nodes...
 riotnative     : Kill the RIOT: /path/to/my/project/binary.elf (5996)
 
-> riot undefine uni-ring5
+> .'riot undefine uni-ring5
 cd /path/to/RIOT/dist/tools/desvirt/desvirt && ./vnet -u /path/to/RIOT/dist/tools/desvirt/desvirt/.desvirt/ -n uni-ring5
 vnet           : Loaded statefile .desvirt/lib/uni-ring5.macs.
 vnet           : Loaded statefile .desvirt/lib/uni-ring5.taps.
