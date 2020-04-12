@@ -125,7 +125,7 @@ void *_leader_election(void *argv) {
     int discoveryCount = 0;
     bool quit = false;
     
-    (void) puts("LE: Success - started protocol thread");
+    printf("LE: Success - started protocol thread with m=%d\n", m);
     int res = 0;
     while (1) {
         if (quit) break;
@@ -136,14 +136,14 @@ void *_leader_election(void *argv) {
         if (res == 1) {
             if (msg_in.type == 0 && udpServerPID == (kernel_pid_t)0) { // process UDP server PID
 
-                (void) puts("LE: in type==0 block");
+                //(void) puts("LE: in type==0 block");
                 udpServerPID = *(kernel_pid_t*)msg_in.content.ptr;
                 printf("LE: Protocol thread recorded %" PRIkernel_pid " as the UDP server thread's PID\n", udpServerPID);
                 continue;
 
             } else if (msg_in.type == 1 && strlen(myIPv6) == 0) { // process my IPv6
 
-                (void) puts("LE: in type==1 block");
+                //(void) puts("LE: in type==1 block");
                 strncpy(myIPv6, (char*)msg_in.content.ptr, strlen((char*)msg_in.content.ptr)+1);
                 strcpy(leader, myIPv6);
                 printf("LE: Protocol thread recorded %s as it's IPv6\n", leader);
@@ -159,7 +159,7 @@ void *_leader_election(void *argv) {
 
             } else if (msg_in.type > 2 && msg_in.type < MAX_IPC_MESSAGE_SIZE) { // process string message of size msg_in.type
 
-                printf("LE: in type>2 block, type=%u\n", (uint16_t)msg_in.type);
+                //printf("LE: in type>2 block, type=%u\n", (uint16_t)msg_in.type);
                 strncpy(msg_content, (char*)msg_in.content.ptr, (uint16_t)msg_in.type+1);
                 printf("LE: Protocol thread received IPC message: %s from PID=%" PRIkernel_pid "\n", msg_content, msg_in.sender_pid);
 
@@ -261,10 +261,10 @@ void *_leader_election(void *argv) {
                     stateND = 1;
                     break;
                 case 1 : // case 1: listen for acknowledgement
-                    if (lastND < xtimer_now_usec64() - 5000000) {
-                        // if no acks for 5 seconds, terminate
+                    if (lastND < xtimer_now_usec64() - 8000000) {
+                        // if no acks for 8 seconds, terminate
                         stateND = 0;
-                        if (numNeighbors > 1) {
+                        if (numNeighbors > 0) {
                             runningND = false;
                             lastND = xtimer_now_usec64();
                         }
@@ -287,7 +287,7 @@ void *_leader_election(void *argv) {
                 allowLE = false;
                 startTimeLE = (uint64_t)(xtimer_now_usec64()/1000000);
             }
-        } else {
+        } else if (runningLE) {
             // perform leader election
             switch(stateLE) {   // check what state of leader election we are in
                 case 0 : // case 0: send out multicast ping
@@ -325,7 +325,7 @@ void *_leader_election(void *argv) {
             }
         }
         
-        xtimer_usleep(200000); // wait 0.2 seconds
+        xtimer_usleep(100000); // wait 0.1 seconds
     }
 
     for(int i = 0; i < MAX_NEIGHBORS; i++) {

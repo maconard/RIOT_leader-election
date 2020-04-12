@@ -142,7 +142,8 @@ void *_udp_server(void *args)
                 printf("UDP: My IP is %s\n", myIPv6);
                 msg_out.content.ptr = &myIPv6;
                 msg_out.type = 1;
-                msg_try_send(&msg_out, leaderPID);
+                //msg_try_send(&msg_out, leaderPID);
+                ipc_msg_send(myIPv6, leaderPID, false);
 
             } else if (strncmp(server_buffer,"le_ack",6) == 0) {
                 // process new m value

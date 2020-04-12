@@ -297,14 +297,14 @@ f.write("""PROJ="$1"\n\n""")
 f.write("make desvirt-stop TOPO=%s\n" % name)
 f.write("make desvirt-undefine TOPO=%s\n" % name)
 f.write("sudo ip link delete %s\n" % name)
-if topo == "grid":
+if topo == "grid" or topo == "mesh":
     for x in range(0,rows):
         for y in range(0,cols):
             ident = str(chr(letter+x)) + str(y)
             f.write("sudo ip link delete %s_%s\n" % (name,ident))
             f.write("rm bin/native/${PROJ}%s.elf\n" % ident)
             g.write("cp ${PROJ}.elf ${PROJ}%s.elf\n" % ident)
-elif topo == "ring" or topo == "line" or topo == "mesh":
+elif topo == "ring" or topo == "line" or topo == "complete":
     for x in range(0,size):
         f.write("sudo ip link delete %s_%s\n" % (name,str(x)))
         f.write("rm bin/native/${PROJ}%s.elf\n" % str(x))
@@ -336,6 +336,8 @@ elif topo == "star":
         f.write("sudo ip link delete %s_%s\n" % (name,ident))
         f.write("rm bin/native/${PROJ}%s.elf\n" % ident)
         g.write("cp ${PROJ}.elf ${PROJ}%s.elf\n" % ident)
+
+f.write("pkill -9 -f ${PROJ}\n");
 
 f.close()
 st = os.stat(cName)
