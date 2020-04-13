@@ -182,7 +182,7 @@ void *_udp_server(void *args)
                 printf("UDP: sent UDP message \"%s\" to multicast\n", msg_content);
 
             } else if (strncmp(msg_content,"nd_hello:",9) == 0) {
-                // send multicast neighbor discovery
+                // send targeted neighbor hello
                 char port[5];
                 sprintf(port, "%d", SERVER_PORT);
                 substr(msg_content, 9, IPV6_ADDRESS_LEN, ipv6);
