@@ -44,6 +44,8 @@ static char protocol_stack[THREAD_STACKSIZE_DEFAULT];
 static msg_t _protocol_msg_queue[MAIN_QUEUE_SIZE];
 static msg_t msg_in;//, msg_out;
 
+kernel_pid_t udpServerPID = 0;
+
 // into t from s starting at a for length b
 void substr(char *s, int a, int b, char *t) 
 {
@@ -85,7 +87,7 @@ void msgAllNeighbors(uint32_t min, char *leader, char *me) {
 }
 
 int indexOfSemi(char *ipv6) {
-	for (int i = 0; i < strlen(ipv6); i++) {
+	for (uint32_t i = 0; i < strlen(ipv6); i++) {
 		if (ipv6[i]  == ';') {
 			return i+1; // start of second id
 		}
@@ -95,10 +97,10 @@ int indexOfSemi(char *ipv6) {
 
 // return -1 if a<b, 1 if a>b, 0 if a==b
 int minIPv6(char *ipv6_a, char *ipv6_b) {
-	int minLength = strlen(ipv6_a);
+	uint32_t minLength = strlen(ipv6_a);
 	if (strlen(ipv6_b) < minLength) minLength = strlen(ipv6_b);
 	
-	for (int i = 0; i < minLength; i++) {
+	for (uint32_t i = 0; i < minLength; i++) {
 		if (ipv6_a[i] < ipv6_b[i]) {
 			return -1;
 		} else if (ipv6_b[i] < ipv6_a[i]) {
@@ -132,7 +134,6 @@ void *_leader_election(void *argv) {
     (void)argv;
 
     msg_init_queue(_protocol_msg_queue, MAIN_QUEUE_SIZE);
-    kernel_pid_t udpServerPID = 0;
     char msg_content[MAX_IPC_MESSAGE_SIZE];
 
     char ipv6[IPV6_ADDRESS_LEN] = { 0 };
