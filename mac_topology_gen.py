@@ -17,7 +17,6 @@ parser.add_argument("--d", default="bi", type=str, choices=['uni','bi'], help="U
 parser.add_argument("--b", default="0.0", type=str, help="Percentage of broadcast loss given as a string (default \"0.0\")")
 parser.add_argument("--l", default="0.0", type=str, help="Percentage of packet loss given as a string (default \"0.0\")")
 parser.add_argument("--e", default="", type=str, help="Address of a compiled RIOT project .elf file to run on all the nodes")
-parser.add_argument("--m", default=0, type=int, choices=[0,1], help="Whether or not to append node names to binary file")
 
 # PARSING
 args = parser.parse_args()
@@ -28,18 +27,11 @@ topo = args.t
 dire = args.d
 blos = args.b
 loss = args.l
-binn = args.m
-if binn == 1:
-    riot = args.e[:-4]
-else:
-    riot = args.e
+riot = args.e
 
 # FUNCTIONS
 def addNode(f, name, binary):
-    if binn == 1:
-        f.write("            <node binary=\"%s%s.elf\" name=\"%s\" type=\"riot_native\"/>\n" % (binary, name, name))
-    else:
-        f.write("            <node binary=\"%s\" name=\"%s\" type=\"riot_native\"/>\n" % (binary, name))
+    f.write("            <node binary=\"%s\" name=\"%s\" type=\"riot_native\"/>\n" % (binary, name))
     return;
 
 def addNeighbor(f, existingLinks, blos, fromNode, loss, toNode, uni):
@@ -286,12 +278,7 @@ f.close()
 
 # GENERATE CLEAN-UP SCRIPT
 cName = name + "_cleanup.sh"
-eName = name + "_elf.sh"
 f = open(cName, "w+")
-g = open(eName, "w+")
-
-g.write("""PROJ="$1"\n\n""")
-g.write("cd bin/native\n\n")
 
 f.write("""PROJ="$1"\n\n""")
 f.write("make desvirt-stop TOPO=%s\n" % name)
@@ -303,17 +290,14 @@ if topo == "grid" or topo == "mesh":
             ident = str(chr(letter+x)) + str(y)
             f.write("sudo ip link delete %s_%s\n" % (name,ident))
             f.write("rm bin/native/${PROJ}%s.elf\n" % ident)
-            g.write("cp ${PROJ}.elf ${PROJ}%s.elf\n" % ident)
 elif topo == "ring" or topo == "line" or topo == "complete":
     for x in range(0,size):
         f.write("sudo ip link delete %s_%s\n" % (name,str(x)))
         f.write("rm bin/native/${PROJ}%s.elf\n" % str(x))
-        g.write("cp ${PROJ}.elf ${PROJ}%s.elf\n" % str(x))
 elif topo == "binary-tree":
     depth = int(math.log(size+1,2))
     f.write("sudo ip link delete %s_%s\n" % (name,"root"))
     f.write("rm bin/native/${PROJ}%s.elf\n" % "root")
-    g.write("cp ${PROJ}.elf ${PROJ}%s.elf\n" % "root")
     count = 1;
     for x in range(2,depth+2):
         for y in range(0,pow(2,x-1)):
@@ -321,7 +305,6 @@ elif topo == "binary-tree":
             if count < size:
                 f.write("sudo ip link delete %s_%s\n" % (name,ident))
                 f.write("rm bin/native/${PROJ}%s.elf\n" % ident)
-                g.write("cp ${PROJ}.elf ${PROJ}%s.elf\n" % ident)
                 count = count+1
             else:
                 break
@@ -330,12 +313,10 @@ elif topo == "binary-tree":
 elif topo == "star":   
     f.write("sudo ip link delete %s_%s\n" % (name,"root"))
     f.write("rm bin/native/${PROJ}%s.elf\n" % "root")
-    g.write("cp ${PROJ}.elf ${PROJ}%s.elf\n" % "root")
     for x in range(0,size-1):
         ident = str(x)
         f.write("sudo ip link delete %s_%s\n" % (name,ident))
         f.write("rm bin/native/${PROJ}%s.elf\n" % ident)
-        g.write("cp ${PROJ}.elf ${PROJ}%s.elf\n" % ident)
 
 f.write("pkill -9 -f ${PROJ}\n");
 
@@ -343,11 +324,6 @@ f.close()
 st = os.stat(cName)
 os.chmod(cName, st.st_mode | stat.S_IEXEC)
 
-g.close()
-st = os.stat(eName)
-os.chmod(eName, st.st_mode | stat.S_IEXEC)
-
 print("Created %s" % (fName))
 print("Created %s" % (cName))
-print("Created %s\n" % (eName))
 
