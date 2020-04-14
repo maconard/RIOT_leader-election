@@ -27,6 +27,8 @@
 #define IPV6_ADDRESS_LEN        (46)
 #define MAX_IPC_MESSAGE_SIZE    (256)
 
+#define DEBUG	(0)
+
 // External functions defs
 extern int ipc_msg_send(char *message, kernel_pid_t destinationPID, bool blocking);
 extern int ipc_msg_reply(char *message, msg_t incoming);
@@ -44,7 +46,8 @@ static char server_buffer[SERVER_BUFFER_SIZE];
 static char server_stack[THREAD_STACKSIZE_DEFAULT];
 static msg_t server_msg_queue[SERVER_MSG_QUEUE_SIZE];
 static sock_udp_t sock;
-static msg_t msg_in, msg_out;
+static msg_t msg_u_in, msg_u_out;
+int messageCount = 0;
 
 // State variables
 static bool server_running = false;
@@ -71,8 +74,8 @@ void *_udp_server(void *args)
     char msg_content[MAX_IPC_MESSAGE_SIZE];
     //sprintf(msg_content, "%u", thread_getpid());
     kernel_pid_t myPid = thread_getpid();
-    msg_out.type = 0;
-    msg_out.content.ptr = &myPid;
+    msg_u_out.type = 0;
+    msg_u_out.content.ptr = &myPid;
 
     printf("UDP: Trying to communicate with process PID=%" PRIkernel_pid  "\n", leaderPID);
     while (1) {
@@ -82,7 +85,7 @@ void *_udp_server(void *args)
         }
 
         // wait for protocol thread to initialize    
-        int res = msg_try_send(&msg_out, leaderPID);
+        int res = msg_try_send(&msg_u_out, leaderPID);
         if (res == -1) {
             // msg failed because protocol thread doesn't exist or we have the wrong PID
             (void) puts("UDP: Error - UDP server thread can't communicate with protocol thread");
@@ -117,57 +120,72 @@ void *_udp_server(void *args)
         else {
             server_buffer[res] = '\0';
             res = 1;
+			messageCount = messageCount + 1;
             ipv6_addr_to_str(ipv6, (ipv6_addr_t *)&remote.addr.ipv6, IPV6_ADDRESS_LEN);
-            printf("UDP: recvd: %s from %s\n", server_buffer, ipv6);
+            if (DEBUG == 1) 
+				printf("UDP: recvd: %s from %s\n", server_buffer, ipv6);
         }
 
         // react to UDP message
         if (res == 1) {
             if (strncmp(server_buffer,"nd_init",7) == 0) {
+				// respond to neighbor request
                 char port[5];
                 sprintf(port, "%d", SERVER_PORT);
-                char msg[7] = "nd_ack";
+                char msg[MAX_IPC_MESSAGE_SIZE] = "nd_ack:";
                 char *argsMsg[] = { "udp_send", ipv6, port, msg, NULL };
                 udp_send(4, argsMsg);
-                printf("UDP: sent UDP message \"%s\" to %s\n", msg, ipv6);
+                if (DEBUG == 1) 
+					printf("UDP: sent UDP message \"%s\" to %s\n", msg, ipv6);
+				xtimer_usleep(50000); // wait 0.05 seconds
+                char msg2[MAX_IPC_MESSAGE_SIZE] = "nd_hello:";
+				strcat(msg2,ipv6);
+                char *argsMsg2[] = { "udp_send", ipv6, port, msg2, NULL };
+                udp_send(4, argsMsg2);
+                if (DEBUG == 1) 
+					printf("UDP: sent UDP message \"%s\" to %s\n", msg2, ipv6);
+
+				// processes new neighbor
+                //strcpy(msg,"nd_ack:");
+                //strcat(msg, ipv6);
+                //ipc_msg_send(msg, leaderPID, false);
+                //printf("UDP: sent IPC message \"%s\" to %" PRIkernel_pid "\n", msg, leaderPID);
             } else if (strncmp(server_buffer,"nd_ack",6) == 0) {
                 // processes new neighbor
                 char msg[MAX_IPC_MESSAGE_SIZE] = "nd_ack:";
                 strcat(msg, ipv6);
                 ipc_msg_send(msg, leaderPID, false);
-                printf("UDP: sent IPC message \"%s\" to %" PRIkernel_pid "\n", msg, leaderPID);
+                if (DEBUG == 1) 
+					printf("UDP: sent IPC message \"%s\" to %" PRIkernel_pid "\n", msg, leaderPID);
             } else if (strlen(myIPv6) == 0 && strncmp(server_buffer, "nd_hello:", 9) == 0){
                 // ip address update
                 substr(server_buffer, 9, IPV6_ADDRESS_LEN, myIPv6);
                 printf("UDP: My IP is %s\n", myIPv6);
-                msg_out.content.ptr = &myIPv6;
-                msg_out.type = 1;
-                //msg_try_send(&msg_out, leaderPID);
-                ipc_msg_send(myIPv6, leaderPID, false);
+                msg_u_out.content.ptr = &myIPv6;
+                msg_u_out.type = 1;
+                msg_try_send(&msg_u_out, leaderPID);
+                //ipc_msg_send(myIPv6, leaderPID, false);
 
-            } else if (strncmp(server_buffer,"le_ack",6) == 0) {
-                // process new m value
+            } else if (strncmp(server_buffer,"le_ack",6) == 0 || strncmp(server_buffer,"le_m?",5) == 0) {
+                // process m value things
                 ipc_msg_send(server_buffer, leaderPID, false);
-                printf("UDP: sent IPC message \"%s\" to %" PRIkernel_pid "\n", server_buffer, leaderPID);
+                if (DEBUG == 1) 
+					printf("UDP: sent IPC message \"%s\" to %" PRIkernel_pid "\n", server_buffer, leaderPID);
                 
-            } else if (strncmp(server_buffer,"le_m?",5) == 0) {
-                // request our m
-                ipc_msg_send(server_buffer, leaderPID, false);
-                printf("UDP: sent IPC message \"%s\" to %" PRIkernel_pid "\n", server_buffer, leaderPID);
-
             }
         }
 
         // incoming thread message
         memset(msg_content, 0, MAX_IPC_MESSAGE_SIZE);
-        res = msg_try_receive(&msg_in);
+        res = msg_try_receive(&msg_u_in);
         if (res == 1) {
-            if (msg_in.type > 0 && msg_in.type < MAX_IPC_MESSAGE_SIZE) {
-                // process string message of size msg_in.type
-                strncpy(msg_content, (char*)msg_in.content.ptr, (uint16_t)msg_in.type+1);
-                printf("UDP: received IPC message: %s from %" PRIkernel_pid "\n", msg_content, msg_in.sender_pid);
+            if (msg_u_in.type > 0 && msg_u_in.type < MAX_IPC_MESSAGE_SIZE) {
+                // process string message of size msg_u_in.type
+                strncpy(msg_content, (char*)msg_u_in.content.ptr, (uint16_t)msg_u_in.type+1);
+                if (DEBUG == 1) 
+					printf("UDP: received IPC message: %s from %" PRIkernel_pid ", type=%d\n", msg_content, msg_u_in.sender_pid, msg_u_in.type);
             } else {
-                printf("UPD: received an illegal or too large IPC message, type=%u", msg_in.type);
+                printf("UPD: received an illegal or too large IPC message, type=%u", msg_u_in.type);
             }
         }
 
@@ -179,7 +197,8 @@ void *_udp_server(void *args)
                 sprintf(port, "%d", SERVER_PORT);
                 char *argsMsg[] = { "udp_send_multi", port, msg_content, NULL };
                 udp_send_multi(3, argsMsg);
-                printf("UDP: sent UDP message \"%s\" to multicast\n", msg_content);
+                if (DEBUG == 1) 
+					printf("UDP: sent UDP message \"%s\" to multicast\n", msg_content);
 
             } else if (strncmp(msg_content,"nd_hello:",9) == 0) {
                 // send targeted neighbor hello
@@ -189,7 +208,8 @@ void *_udp_server(void *args)
                 
                 char *argsMsg[] = { "udp_send", ipv6, port, msg_content, NULL };
                 udp_send(4, argsMsg);
-                printf("UDP: sent UDP message \"%s\" to %s\n", msg_content, ipv6);
+                if (DEBUG == 1) 
+					printf("UDP: sent UDP message \"%s\" to %s\n", msg_content, ipv6);
 
             } else if (strncmp(msg_content,"le_init",7) == 0) {
                 // send out m? queries
@@ -198,7 +218,8 @@ void *_udp_server(void *args)
                 char msg[7] = "le_m?:";
                 char *argsMsg[] = { "udp_send_multi", port, msg, NULL };
                 udp_send_multi(3, argsMsg);
-                printf("UDP: sent UDP message \"%s\" to multicast\n", msg);
+                if (DEBUG == 1) 
+					printf("UDP: sent UDP message \"%s\" to multicast\n", msg);
     
             } else if (strncmp(msg_content,"le_ack",6) == 0) {
                 // send out m value
@@ -206,12 +227,16 @@ void *_udp_server(void *args)
                 sprintf(port, "%d", SERVER_PORT);
                 char *argsMsg[] = { "udp_send_multi", port, msg_content, NULL };
                 udp_send_multi(3, argsMsg);
-                printf("UDP: sent UDP message \"%s\" to multicast\n", msg_content);
+                if (DEBUG == 1) 
+					printf("UDP: sent UDP message \"%s\" to multicast\n", msg_content);
 
+            } else if (strncmp(msg_content,"le_done",7) == 0) {
+                // leader election finished!
+                printf("UDP: leader election finishes, %d messages passed through this node\n", messageCount);
             }
         }
 
-        xtimer_usleep(250000); // wait 0.25 seconds
+        xtimer_usleep(200000); // wait 0.2 seconds
     }
 
     return NULL;
@@ -241,7 +266,9 @@ int udp_send(int argc, char **argv)
         printf("UDP: Error - could not send message \"%s\" to %s\n", argv[3], argv[1]);
     }
     else {
-        printf("UDP: Success - sent %u bytes to %s\n", (unsigned) res, argv[1]);
+        if (DEBUG == 1) 
+			printf("UDP: Success - sent %u bytes to %s\n", (unsigned) res, argv[1]);
+		messageCount = messageCount + 1;
     }
     return 0;
 }
@@ -271,7 +298,9 @@ int udp_send_multi(int argc, char **argv)
         printf("UDP: Error - could not send message \"%s\" to %s\n", argv[2], ipv6);
     }
     else {
-        printf("UDP: Success - sent %u bytes to %s\n", (unsigned)res, ipv6);
+        if (DEBUG == 1) 
+			printf("UDP: Success - sent %u bytes to %s\n", (unsigned)res, ipv6);
+		messageCount = messageCount + 1;
     }
     return 0;
 }
