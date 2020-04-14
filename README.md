@@ -101,6 +101,9 @@ A simple script that makes it easier to use desvirt. Requires that desvirt is al
 $1: the desvirt command to run, from: `list`, `define`, `undefine`, `start`, `stop`  
 $2: the topology file to launch (not used with `list`)
 
+## `setup`
+A simple script that tears down your old RIOT instance and fully launches a new one, which is useful for compiling and launching changes made to your project. You need to edit the file to set the `PROJ` variable to your project name and the `TOPO` variable to whatever topology you want to tear down and re-launch. If you're trying to change topologies, you should run `{TOPO}_cleanup.sh {PROJ}` separately before your next run of `setup` with the new topology.
+
 Sample Use
 ==========
 
