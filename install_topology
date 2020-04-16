@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # A simple script that installs a topology file to the desvirt directory
 # Author: Michael Conard
 

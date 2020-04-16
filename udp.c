@@ -27,7 +27,7 @@
 #define IPV6_ADDRESS_LEN        (46)
 #define MAX_IPC_MESSAGE_SIZE    (256)
 
-#define DEBUG	(0)
+#define DEBUG	(1)
 
 // External functions defs
 extern int ipc_msg_send(char *message, kernel_pid_t destinationPID, bool blocking);
@@ -137,7 +137,9 @@ void *_udp_server(void *args)
                 udp_send(4, argsMsg);
                 if (DEBUG == 1) 
 					printf("UDP: sent UDP message \"%s\" to %s\n", msg, ipv6);
+
 				xtimer_usleep(50000); // wait 0.05 seconds
+
                 char msg2[MAX_IPC_MESSAGE_SIZE] = "nd_hello:";
 				strcat(msg2,ipv6);
                 char *argsMsg2[] = { "udp_send", ipv6, port, msg2, NULL };

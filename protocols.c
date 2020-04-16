@@ -24,12 +24,12 @@
 #define IPV6_ADDRESS_LEN        (46)
 #define MAX_NEIGHBORS           (20)
 
-#define DEBUG	(0)
+#define DEBUG	(1)
 
 // Leader Election values
-#define K 	(2)
-#define T1	(6*1000000)
-#define T2	(4*1000000)
+#define K 	(5)
+#define T1	(5*1000000)
+#define T2	(3*1000000)
 
 // External functions defs
 extern int ipc_msg_send(char *message, kernel_pid_t destinationPID, bool blocking);
@@ -248,9 +248,9 @@ void *_leader_election(void *argv) {
                     printf("**********\nLE: recorded new neighbor, %s\n**********\n", (char*)neighbors[numNeighbors]);
                     numNeighbors++;
 
-                    char msg[MAX_IPC_MESSAGE_SIZE] = "nd_hello:";
-                    strcat(msg, ipv6);
-                    ipc_msg_send(msg, udpServerPID, false);
+                    //char msg[MAX_IPC_MESSAGE_SIZE] = "nd_hello:";
+                    //strcat(msg, ipv6);
+                    //ipc_msg_send(msg, udpServerPID, false);
 
                     lastND = xtimer_now_usec64();
                 } else {
@@ -310,7 +310,7 @@ void *_leader_election(void *argv) {
                 substr(msg_content, 7, 3, neighborM); // obtain m value
 				int j = indexOfSemi(msg_content);
                 substr(msg_content, 11, j-11-1, ipv6); // obtain ID
-				if (DEBUG == 1) printf("LE: found ; at %d\n", j);
+				//if (DEBUG == 1) printf("LE: found ; at %d\n", j);
 				substr(msg_content, j+1, IPV6_ADDRESS_LEN, ipv6_2); // obtain neighbor ID
                 int i = getNeighborIndex(neighbors, ipv6_2);
                 if (atoi(neighborM) <= 0) continue;
