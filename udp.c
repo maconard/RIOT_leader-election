@@ -22,7 +22,7 @@
 #include "net/sock/udp.h"
 #include "net/ipv6/addr.h"
 
-#define SERVER_MSG_QUEUE_SIZE   (32)
+#define SERVER_MSG_QUEUE_SIZE   (128)
 #define SERVER_BUFFER_SIZE      (64)
 #define IPV6_ADDRESS_LEN        (46)
 #define MAX_IPC_MESSAGE_SIZE    (256)
@@ -40,6 +40,8 @@ void *_udp_server(void *args);
 int udp_send(int argc, char **argv);
 int udp_send_multi(int argc, char **argv);
 int udp_server(int argc, char **argv);
+void countMsgOut(void);
+void countMsgIn(void);
 
 // Data structures (i.e. stacks, queues, message structs, etc)
 static char server_buffer[SERVER_BUFFER_SIZE];
@@ -47,11 +49,21 @@ static char server_stack[THREAD_STACKSIZE_DEFAULT];
 static msg_t server_msg_queue[SERVER_MSG_QUEUE_SIZE];
 static sock_udp_t sock;
 static msg_t msg_u_in, msg_u_out;
-int messageCount = 0;
+int messagesIn = 0;
+int messagesOut = 0;
+bool runningLE = false;
 
 // State variables
 static bool server_running = false;
 const int SERVER_PORT = 3142;
+
+void countMsgIn(void) {
+    if (runningLE) messagesIn += 1;
+}
+
+void countMsgOut(void) {
+    if (runningLE) messagesOut += 1;
+}
 
 void *_udp_server(void *args)
 {
@@ -99,7 +111,7 @@ void *_udp_server(void *args)
             break;
         }
 
-        xtimer_sleep(500000); // wait 0.5 seconds
+        xtimer_sleep(100000); // wait 0.1 seconds
     }
 
     while (1) {
@@ -120,7 +132,7 @@ void *_udp_server(void *args)
         else {
             server_buffer[res] = '\0';
             res = 1;
-			messageCount = messageCount + 1;
+			countMsgIn();
             ipv6_addr_to_str(ipv6, (ipv6_addr_t *)&remote.addr.ipv6, IPV6_ADDRESS_LEN);
             if (DEBUG == 1) 
 				printf("UDP: recvd: %s from %s\n", server_buffer, ipv6);
@@ -166,6 +178,7 @@ void *_udp_server(void *args)
                 msg_u_out.content.ptr = &myIPv6;
                 msg_u_out.type = 1;
                 msg_try_send(&msg_u_out, leaderPID);
+                countMsgOut();
                 //ipc_msg_send(myIPv6, leaderPID, false);
 
             } else if (strncmp(server_buffer,"le_ack",6) == 0 || strncmp(server_buffer,"le_m?",5) == 0) {
@@ -215,6 +228,7 @@ void *_udp_server(void *args)
 
             } else if (strncmp(msg_content,"le_init",7) == 0) {
                 // send out m? queries
+                runningLE = true;
                 char port[5];
                 sprintf(port, "%d", SERVER_PORT);
                 char msg[7] = "le_m?:";
@@ -234,11 +248,11 @@ void *_udp_server(void *args)
 
             } else if (strncmp(msg_content,"le_done",7) == 0) {
                 // leader election finished!
-                printf("UDP: leader election finishes, %d messages passed through this node\n", messageCount);
+                printf("UDP: leader election complete, msgsIn: %d, msgsOut: %d, msgsTotal: %d\n", messagesIn, messagesOut, messagesIn + messagesOut);
             }
         }
 
-        xtimer_usleep(200000); // wait 0.2 seconds
+        xtimer_usleep(100000); // wait 0.1 seconds
     }
 
     return NULL;
@@ -270,7 +284,7 @@ int udp_send(int argc, char **argv)
     else {
         if (DEBUG == 1) 
 			printf("UDP: Success - sent %u bytes to %s\n", (unsigned) res, argv[1]);
-		messageCount = messageCount + 1;
+		countMsgOut();
     }
     return 0;
 }
@@ -302,7 +316,7 @@ int udp_send_multi(int argc, char **argv)
     else {
         if (DEBUG == 1) 
 			printf("UDP: Success - sent %u bytes to %s\n", (unsigned)res, ipv6);
-		messageCount = messageCount + 1;
+		countMsgOut();
     }
     return 0;
 }

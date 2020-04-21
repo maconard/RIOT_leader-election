@@ -24,7 +24,7 @@
 #include "net/gnrc/ndp.h"
 #include "net/gnrc/pkt.h"
 
-#define MAIN_QUEUE_SIZE         (32)
+#define MAIN_QUEUE_SIZE         (128)
 #define MAX_IPC_MESSAGE_SIZE    (256)
 #define IPV6_ADDRESS_LEN        (46)
 #define MAX_NEIGHBORS           (20)

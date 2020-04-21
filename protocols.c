@@ -19,12 +19,12 @@
 #include "xtimer.h"
 #include "random.h"
 
-#define MAIN_QUEUE_SIZE         (32)
+#define MAIN_QUEUE_SIZE         (128)
 #define MAX_IPC_MESSAGE_SIZE    (256)
 #define IPV6_ADDRESS_LEN        (46)
 #define MAX_NEIGHBORS           (20)
 
-#define DEBUG	(1)
+#define DEBUG	(0)
 
 // Leader Election values
 #define K 	(5)
@@ -156,9 +156,9 @@ void *_leader_election(void *argv) {
 
     random_init(xtimer_now_usec());  
     
-    uint64_t delayND = 45*1000000; //45sec
-    uint64_t delayLE = 45*1000000; //45sec
-    uint64_t lastND = 0;
+    uint64_t delayND = 5*1000000; //5sec
+    uint64_t delayLE = 40*1000000; //40sec
+    uint64_t lastND = xtimer_now_usec64();;
     uint64_t lastLE = xtimer_now_usec64();
     uint64_t timeToRun;
     uint64_t now;
@@ -172,9 +172,9 @@ void *_leader_election(void *argv) {
     int stateND = 0;
     int stateLE = 0;
     int countedMs = 0;
-    int discoveryCount = 0;
     bool quit = false;
 	bool completeND = false;
+    int countdownND = 5;
 
 	// Ali's LE variabnles
 	int counter = K; //k
@@ -259,23 +259,20 @@ void *_leader_election(void *argv) {
             }
         }
 
-        xtimer_usleep(100000); // wait 0.1 seconds
+        xtimer_usleep(50000); // wait 0.05 seconds
         if (udpServerPID == 0) continue;
         
         // neighbor discovery
-        if (!runningND && !completeND) {
+        if (!runningND && !completeND && countdownND > 0) {
             // check if it's time to run, then initialize
             now = xtimer_now_usec64();
-            if (discoveryCount == 0) {
-                timeToRun = delayND/3;
-            } else {
-                timeToRun = lastND + delayND;
-            }
+            timeToRun = lastND + delayND;
             if (now > timeToRun) {
                 lastND = xtimer_now_usec64();
                 (void) puts("LE: Running neighbor discovery...");
                 runningND = true;
-                discoveryCount += 1;
+                countdownND -= 1;
+                if (countdownND == 0) completeND = true;
             }
         } else if (runningND) {
             // perform neighbor discovery
@@ -285,13 +282,20 @@ void *_leader_election(void *argv) {
                     stateND = 1;
                     break;
                 case 1 : // case 1: listen for acknowledgement
-                    if (lastND < xtimer_now_usec64() - 8000000) {
+                    if (lastND < xtimer_now_usec64() - delayND) {
                         // if no acks for 8 seconds, terminate
-                        if (numNeighbors > 0) {
-                            runningND = false;
-							completeND = true;
-                        	stateND = 0;
-                            lastND = xtimer_now_usec64();
+                        runningND = false;
+                        stateND = 0;
+                        //lastND = xtimer_now_usec64();
+                        if (completeND) {
+                            printf("Neighbor Discovery complete, %d neighbors:\n",numNeighbors);
+                            int c = 1;
+                            for (int i = 0; i < MAX_NEIGHBORS; i++) {
+                                if (strcmp(neighbors[i],"") == 0) 
+                                    continue;
+                                printf("%2d: %s\n", c, neighbors[i]);
+                                c += 1;
+                            }
                         }
                     }
                     break;
@@ -469,7 +473,7 @@ void *_leader_election(void *argv) {
             }
         }
         
-        xtimer_usleep(100000); // wait 0.1 seconds
+        xtimer_usleep(50000); // wait 0.05 seconds
 		//printf("LE: bottom\n");
     }
 
@@ -491,6 +495,7 @@ void *_leader_election(void *argv) {
 
             }
         }
+        xtimer_usleep(200000); // wait 0.2 seconds
     }
 
     return 0;
