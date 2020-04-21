@@ -296,6 +296,7 @@ void *_leader_election(void *argv) {
                                 printf("%2d: %s\n", c, neighbors[i]);
                                 c += 1;
                             }
+							delayLE = 0;
                         }
                     }
                     break;
@@ -351,7 +352,7 @@ void *_leader_election(void *argv) {
             // check if it's time to run, then initialize
             now = xtimer_now_usec64();
             timeToRun = lastLE + delayLE;
-            if (ENABLE_LEADER == 1 && numNeighbors > 0 && !hasElectedLeader && allowLE && now > timeToRun) {
+            if (numNeighbors > 0 && !hasElectedLeader && allowLE && now > timeToRun) {
                 lastLE = xtimer_now_usec64();
                 (void) puts("LE: Running leader election...");
                 runningLE = true;
