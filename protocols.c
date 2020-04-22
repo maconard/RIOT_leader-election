@@ -122,7 +122,7 @@ kernel_pid_t leader_election(int argc, char **argv) {
         return 0;
     }
 
-    kernel_pid_t protocolPID = thread_create(protocol_stack, sizeof(protocol_stack), THREAD_PRIORITY_MAIN - 2, THREAD_CREATE_STACKTEST, _leader_election, argv[1], "Protocol_Thread");
+    kernel_pid_t protocolPID = thread_create(protocol_stack, sizeof(protocol_stack), THREAD_PRIORITY_MAIN - 1, THREAD_CREATE_STACKTEST, _leader_election, argv[1], "Protocol_Thread");
 
     printf("MAIN: thread_create(..., protocol_thread) returned: %" PRIkernel_pid "\n", protocolPID);
     if (protocolPID <= KERNEL_PID_UNDEF) {
@@ -155,10 +155,10 @@ void *_leader_election(void *argv) {
     uint32_t neighborsVal[MAX_NEIGHBORS] = { 0 };
 
     random_init(xtimer_now_usec());  
-    
+
     uint64_t delayND = 5*1000000; //5sec
     uint64_t delayLE = 40*1000000; //40sec
-    uint64_t lastND = xtimer_now_usec64();;
+    uint64_t lastND = xtimer_now_usec64();
     uint64_t lastLE = xtimer_now_usec64();
     uint64_t timeToRun;
     uint64_t now;
@@ -173,18 +173,18 @@ void *_leader_election(void *argv) {
     int stateLE = 0;
     int countedMs = 0;
     bool quit = false;
-	bool completeND = false;
+    bool completeND = false;
     int countdownND = 5;
 
-	// Ali's LE variabnles
-	int counter = K; //k
+    // Ali's LE variables
+    int counter = K; //k
     uint32_t m = (random_uint32() % 254)+1; // my leader election value, range 1 to 255
     uint32_t min = m;                       // the min of my neighborhood 
-	uint32_t tempMin = 257;
+    uint32_t tempMin = 257;
     char leader[IPV6_ADDRESS_LEN] = "unknown";	// the "leader so far"
     char tempLeader[IPV6_ADDRESS_LEN];	// temp leader for a round of communication
-	uint64_t t1 = T1;
-	uint64_t t2 = T2;
+    uint64_t t1 = T1;
+    uint64_t t2 = T2;
     uint64_t lastT1 = 0;
     uint64_t lastT2 = 0;
     
@@ -312,6 +312,7 @@ void *_leader_election(void *argv) {
         if (res == 1) {
             if (numNeighbors > 0 && strncmp(msg_content, "le_ack:", 7) == 0) {
                 // a neighbor has responded
+				// le_ack:mmm:ipv6_owner;ipv6_sender
                 substr(msg_content, 7, 3, neighborM); // obtain m value
 				int j = indexOfSemi(msg_content);
                 substr(msg_content, 11, j-11-1, ipv6); // obtain ID
@@ -427,6 +428,7 @@ void *_leader_election(void *argv) {
 							neighborsVal[i] = 0;
 						}
 
+						// line 6 of pseudocode
 						//msgAllNeighbors(min, leader, myIPv6);				
 						char msg[MAX_IPC_MESSAGE_SIZE] = "le_ack:";               
 						if(min < 10) {
@@ -489,8 +491,8 @@ void *_leader_election(void *argv) {
         res = msg_try_receive(&msg_p_in);
         if (res == 1) {
             if (msg_p_in.type == 2) { // report about the leader
-
-                printf("LE: reporting that the leader is %s\n", leader);
+				if (DEBUG == 1)
+                	printf("LE: reporting that the leader is %s\n", leader);
                 ipc_msg_reply(leader, msg_p_in);
                 continue;
 

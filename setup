@@ -4,7 +4,7 @@
 // This script will cleanup your last RIOT instance AND launch
 // a new one
 
-TOPO=grid12-3x4
+TOPO=mesh12-3x4
 PROJ=my_project
 
 ./${TOPO}_cleanup.sh ${PROJ}

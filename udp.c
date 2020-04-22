@@ -111,7 +111,7 @@ void *_udp_server(void *args)
             break;
         }
 
-        xtimer_sleep(100000); // wait 0.1 seconds
+        xtimer_sleep(200000); // wait 0.2 seconds
     }
 
     while (1) {
@@ -150,7 +150,7 @@ void *_udp_server(void *args)
                 if (DEBUG == 1) 
 					printf("UDP: sent UDP message \"%s\" to %s\n", msg, ipv6);
 
-				xtimer_usleep(50000); // wait 0.05 seconds
+				xtimer_usleep(20000); // wait 0.02 seconds
 
                 char msg2[MAX_IPC_MESSAGE_SIZE] = "nd_hello:";
 				strcat(msg2,ipv6);
@@ -252,7 +252,7 @@ void *_udp_server(void *args)
             }
         }
 
-        xtimer_usleep(100000); // wait 0.1 seconds
+        xtimer_usleep(50000); // wait 0.05 seconds
     }
 
     return NULL;
