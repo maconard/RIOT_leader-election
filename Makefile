@@ -7,7 +7,7 @@ APPLICATION = my_project
 BOARD ?= native
 
 # This has to be the absolute path to the RIOT base directory:
-RIOTBASE ?= $(CURDIR)/../..
+RIOTBASE ?= $(CURDIR)/../../..
 
 # Uncomment this to enable scheduler statistics for ps:
 USEMODULE += schedstatistics
