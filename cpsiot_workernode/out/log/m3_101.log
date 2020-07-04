@@ -1,0 +1,28 @@
+2020-05-22 01:43:29,603 :: INFO :: Start experiment: conard-216637
+2020-05-22 01:43:29,607 :: INFO :: Control node : Starting of control node serial interface
+2020-05-22 01:43:29,610 :: INFO :: Control node : reset
+2020-05-22 01:43:29,612 :: INFO :: Reset Control Node
+2020-05-22 01:43:32,489 :: INFO :: Control node : start power of open node
+2020-05-22 01:43:32,517 :: INFO :: Node OpenOCD: Setup of openocd node
+2020-05-22 01:43:35,557 :: INFO :: Node OpenOCD: flash of openocd node
+2020-05-22 01:43:35,576 :: INFO :: Flash firmware on OpenOCD: /tmp/tmpg64_qb--6889e6efe0ed32a096d9f263f1661e4b_my_project.elf
+2020-05-22 01:43:43,517 :: INFO :: Control node : Start experiment
+2020-05-22 01:43:43,598 :: INFO :: Control Node set time delay: 1679 us
+2020-05-22 01:43:43,623 :: INFO :: Control node : profile configuration
+2020-05-22 01:43:43,629 :: INFO :: Configure profile on Control Node
+2020-05-22 01:43:43,708 :: INFO :: Start experiment succeeded
+2020-05-22 01:45:48,276 :: INFO :: Gateway Manager : Stop experiment
+2020-05-22 01:45:48,284 :: INFO :: Stop experiment
+2020-05-22 01:45:48,292 :: INFO :: Control node : stop of the experiment
+2020-05-22 01:45:48,298 :: INFO :: Control node : profile configuration
+2020-05-22 01:45:48,305 :: INFO :: Configure profile on Control Node
+2020-05-22 01:45:48,376 :: INFO :: Control node : start power of open node
+2020-05-22 01:45:48,416 :: INFO :: Node OpenOCD: teardown of openocd node
+2020-05-22 01:45:51,454 :: INFO :: openocd node debugger stop
+2020-05-22 01:45:52,107 :: INFO :: Node OpenOCD: flash of openocd node
+2020-05-22 01:45:52,114 :: INFO :: Flash firmware on OpenOCD: /usr/lib/python2.7/site-packages/gateway_code/static/m3_idle.elf
+2020-05-22 01:45:54,624 :: INFO :: Control node : Stop control node serial interface
+2020-05-22 01:45:54,629 :: INFO :: Control node : stop power of open node
+2020-05-22 01:45:54,685 :: INFO :: Control node : reset
+2020-05-22 01:45:54,688 :: INFO :: Reset Control Node
+2020-05-22 01:45:57,616 :: INFO :: Stop experiment succeeded
